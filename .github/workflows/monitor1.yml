@@ -13,7 +13,7 @@ on:
       - released
   schedule:
     - cron: '0 8-20 * * *'
-  timezone: Asia/Shanghai
+        timezone: Asia/Shanghai
 
 permissions:
   contents: write
@@ -66,7 +66,7 @@ jobs:
           urls = os.getenv("CHECK_URLS").splitlines()
           print(f"开始检查 {len(urls)} 个 URL")
 
-          state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state.json')
+          state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state1.json')
 
           previous_states = {}
           if os.path.exists(state_file):
@@ -127,11 +127,11 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          if git diff --quiet url_state.json; then
-              echo "No changes detected in url_state.json."
+          if git diff --quiet url_state1.json; then
+              echo "No changes detected in url_state1.json."
           else
-              echo "Changes detected in url_state.json, preparing to commit..."
-              git add url_state.json
+              echo "Changes detected in url_state1.json, preparing to commit..."
+              git add url_state1.json
               git commit -m "Update URL states" || echo "No changes to commit."
               git push origin HEAD || echo "Push failed, please check permissions or network issues."
               echo "状态文件已更新并提交"
