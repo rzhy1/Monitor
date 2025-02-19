@@ -103,10 +103,9 @@ jobs:
                   print(f"Error checking URL {url}: {e}")
 
           if changed_urls:
-            message = "以下链接的内容发生了变化：\n" + "\n".join(changed_urls)
+            message = "招标信息有变化：\n" + "\n".join(changed_urls)
             print(message)
-
-            # 发送通知到企业微信机器人
+            
             webhook_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=fb981fae-2265-4584-a007-2e122fb45237"
             data = {
                 "msgtype": "text",
