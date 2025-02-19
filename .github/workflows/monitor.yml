@@ -32,7 +32,7 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=3511
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&channelId=3512
         https://raw.githubusercontent.com/rzhy1/aria2-static-build/main/.github/workflows/build_and_release.yml
-        https://github.com/rzhy1/check-version/blob/main/README.md
+        https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md
 
     steps:
       - name: Checkout repository
