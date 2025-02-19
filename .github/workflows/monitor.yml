@@ -13,6 +13,9 @@ on:
       - released
   schedule:
     - cron: '0 * * * *'  # 每小时执行一次
+    
+permissions:
+  contents: write
 
 jobs:
   check_url_changes:
