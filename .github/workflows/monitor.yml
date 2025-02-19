@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SCKEY: ${{ secrets.SCTKEY }}  # Server酱的 SCKEY，存储在 GitHub Secrets 中
+      SCTKEY: ${{ secrets.SCTKEY }}  # Server酱的 SCKEY，存储在 GitHub Secrets 中
       CHECK_URLS: |
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=2331
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=2332
@@ -110,7 +110,7 @@ jobs:
               else:
                   notify_url = f"https://sctapi.ftqq.com/{sckey}.send"
                   data = {
-                      "text": "招标信息更新",
+                      "title": "招标信息更新",
                       "desp": message
                   }
                   try:
@@ -129,8 +129,6 @@ jobs:
               json.dump(current_states, f)
               print(f"已保存当前状态到文件 {state_file}")
           EOF
-        env:
-          SCTKEY: ${{ secrets.SCTKEY }}
           
       - name: Commit and push state file
         run: |
