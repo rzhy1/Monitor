@@ -127,7 +127,7 @@ jobs:
           with open(state_file, 'w') as f:
               json.dump(current_states, f)
               print(f"已保存当前状态到文件 {state_file}")
-              cat {state_file}
+              cat url_state.json
           EOF
 
       - name: Commit and push state file
