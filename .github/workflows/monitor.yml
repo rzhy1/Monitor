@@ -129,7 +129,9 @@ jobs:
               json.dump(current_states, f)
               print(f"已保存当前状态到文件 {state_file}")
           EOF
-
+        env:
+          SCTKEY: ${{ secrets.SCTKEY }}
+          
       - name: Commit and push state file
         run: |
           git config --global user.name "github-actions[bot]"
