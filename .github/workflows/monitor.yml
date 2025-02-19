@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -37,6 +37,7 @@ jobs:
       - name: Check for URL changes
         id: check_changes
         run: |
+          python - <<EOF
           import os
           import json
           import hashlib
@@ -74,7 +75,7 @@ jobs:
               print(message)
 
               # 发送通知到 Server酱
-              sckey = os.getenv("SCKEY")
+              sckey = os.getenv("SCTKEY")
               if sckey:
                   notify_url = f"https://sctapi.ftqq.com/{sckey}.send"
                   data = {
@@ -86,6 +87,7 @@ jobs:
           # 保存当前状态
           with open(state_file, 'w') as f:
               json.dump(current_states, f)
+          EOF
 
       - name: Commit state file if changed
         run: |
