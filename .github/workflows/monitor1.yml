@@ -13,7 +13,7 @@ on:
       - released
   schedule:
     - cron: '0 8-20 * * *'
-        timezone: Asia/Shanghai
+      timezone: Asia/Shanghai
 
 permissions:
   contents: write
