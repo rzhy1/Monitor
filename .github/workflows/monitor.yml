@@ -143,7 +143,7 @@ jobs:
           if git diff --quiet; then
               echo "No changes to commit."
           else
-              git add url_state.json
+              git add -f url_state.json
               git commit -m "Update URL states"
               git push origin HEAD
               echo "状态文件已更新并提交"
