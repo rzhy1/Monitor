@@ -127,9 +127,15 @@ jobs:
           with open(state_file, 'w') as f:
               json.dump(current_states, f)
               print(f"已保存当前状态到文件 {state_file}")
-              cat url_state.json
           EOF
-
+      - name: Print url_state.json content
+        run: |
+          if [ -f url_state.json ]; then
+              echo "Current content of url_state.json:"
+              cat url_state.json
+          else
+              echo "url_state.json file does not exist."
+          fi
       - name: Commit and push state file
         run: |
           git config --global user.name "github-actions[bot]"
