@@ -117,7 +117,7 @@ jobs:
               print(f"已保存当前状态到文件 {state_file}")
           EOF
 
-      - name: Commit state file if changed
+      - name: Commit and push state file
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -126,6 +126,6 @@ jobs:
           else
               git add url_state.json
               git commit -m "Update URL states"
-              git push
+              git push origin HEAD
               echo "状态文件已更新并提交"
           fi
