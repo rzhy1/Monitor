@@ -84,7 +84,7 @@ jobs:
                   response = requests.get(url, headers=headers, timeout=10)
                   response.raise_for_status()
 
-                  content = response.text.strip().replace('\r', '').replace('\n', '')
+                  content = ''.join(response.text.split())
                   hash_value = hashlib.md5(content.encode('utf-8')).hexdigest()
 
                   current_states[url] = hash_value
