@@ -55,14 +55,14 @@ jobs:
 
           state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state.json')
 
-          # 读取之前的哈希状态
+          # 初始化状态文件（如果不存在）
           previous_states = {}
           if os.path.exists(state_file):
               with open(state_file, 'r') as f:
                   previous_states = json.load(f)
               print(f"从文件 {state_file} 加载了之前的状态，共 {len(previous_states)} 条记录")
           else:
-              print(f"状态文件 {state_file} 不存在，将创建新文件")
+              print(f"状态文件 {state_file} 不存在，将初始化新文件")
 
           current_states = {}
           changed_urls = []
@@ -72,7 +72,9 @@ jobs:
               try:
                   response = requests.get(url, headers=headers, timeout=10)
                   response.raise_for_status()
-                  content = response.text
+
+                  # 清理内容以避免格式差异影响哈希值
+                  content = response.text.strip().replace('\r', '').replace('\n', '')
                   hash_value = hashlib.md5(content.encode('utf-8')).hexdigest()
 
                   current_states[url] = hash_value
@@ -80,6 +82,8 @@ jobs:
                   if url in previous_states and previous_states[url] != hash_value:
                       changed_urls.append(url)
                       print(f"检测到变化：{url}")
+                  elif url not in previous_states:
+                      print(f"首次记录该 URL：{url}")
                   else:
                       print(f"无变化：{url}")
 
@@ -107,7 +111,7 @@ jobs:
           else:
               print("未检测到任何变化")
 
-          # 保存当前状态
+          # 保存当前状态到文件
           with open(state_file, 'w') as f:
               json.dump(current_states, f)
               print(f"已保存当前状态到文件 {state_file}")
