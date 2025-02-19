@@ -2,18 +2,9 @@ name: Monitor ZTB Changes
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - "*"
-  pull_request:
-    branches:
-      - "*"
-  release:
-    types:
-      - released
   schedule:
     - cron: '0 * * * *'  # 每小时执行一次
-    
+
 permissions:
   contents: write
 
@@ -56,18 +47,15 @@ jobs:
           import hashlib
           import requests
 
-          # 定义请求头，模拟浏览器行为
           headers = {
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
           }
 
-          # 获取所有需要检查的 URL
           urls = os.getenv("CHECK_URLS").splitlines()
           print(f"开始检查 {len(urls)} 个 URL")
 
           state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state.json')
 
-          # 初始化状态文件（如果不存在）
           previous_states = {}
           if os.path.exists(state_file):
               with open(state_file, 'r') as f:
@@ -85,7 +73,6 @@ jobs:
                   response = requests.get(url, headers=headers, timeout=10)
                   response.raise_for_status()
 
-                  # 清理内容以避免格式差异影响哈希值
                   content = response.text.strip().replace('\r', '').replace('\n', '')
                   hash_value = hashlib.md5(content.encode('utf-8')).hexdigest()
 
@@ -102,12 +89,10 @@ jobs:
               except Exception as e:
                   print(f"Error checking URL {url}: {e}")
 
-          # 如果有变化，发送通知
           if changed_urls:
               message = "以下链接的内容发生了变化：\n" + "\n".join(changed_urls)
               print(f"检测到内容变化，准备发送通知:\n{message}")
 
-              # 发送通知到 Server酱
               sckey = os.getenv("SCTKEY")
               if sckey:
                   notify_url = f"https://sctapi.ftqq.com/{sckey}.send"
@@ -123,46 +108,22 @@ jobs:
           else:
               print("未检测到任何变化")
 
-          # 保存当前状态到文件
           with open(state_file, 'w') as f:
               json.dump(current_states, f)
               print(f"已保存当前状态到文件 {state_file}")
           EOF
-      - name: Print url_state.json content
-        run: |
-          if [ -f url_state.json ]; then
-              echo "Current content of url_state.json:"
-              cat url_state.json
-          else
-              echo "url_state.json file does not exist."
-          fi
+
       - name: Commit and push state file
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 检查是否有更改
           if git diff --quiet url_state.json; then
               echo "No changes detected in url_state.json."
           else
               echo "Changes detected in url_state.json, preparing to commit..."
-
-              # 打印 diff 内容
-              git diff url_state.json
-
-              # 提交更改
               git add url_state.json
               git commit -m "Update URL states" || echo "No changes to commit."
               git push origin HEAD || echo "Push failed, please check permissions or network issues."
               echo "状态文件已更新并提交"
-          fi
-
-          # 如果文件仍然未提交，尝试强制上传
-          if [ ! -f url_state.json ]; then
-              echo "Error: url_state.json does not exist after saving."
-          else
-              git add -f url_state.json
-              git commit -m "Force update URL states" || echo "No changes to commit."
-              git push origin HEAD || echo "Push failed, please check permissions or network issues."
-              echo "状态文件已强制更新并提交"
           fi
