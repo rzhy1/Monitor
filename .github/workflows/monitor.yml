@@ -140,12 +140,29 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet; then
-              git add -f url_state.json
-              echo "No changes to commit."
+
+          # 检查是否有更改
+          if git diff --quiet url_state.json; then
+              echo "No changes detected in url_state.json."
+          else
+              echo "Changes detected in url_state.json, preparing to commit..."
+
+              # 打印 diff 内容
+              git diff url_state.json
+
+              # 提交更改
+              git add url_state.json
+              git commit -m "Update URL states" || echo "No changes to commit."
+              git push origin HEAD || echo "Push failed, please check permissions or network issues."
+              echo "状态文件已更新并提交"
+          fi
+
+          # 如果文件仍然未提交，尝试强制上传
+          if [ ! -f url_state.json ]; then
+              echo "Error: url_state.json does not exist after saving."
           else
               git add -f url_state.json
-              git commit -m "Update URL states"
-              git push origin HEAD
-              echo "状态文件已更新并提交"
+              git commit -m "Force update URL states" || echo "No changes to commit."
+              git push origin HEAD || echo "Push failed, please check permissions or network issues."
+              echo "状态文件已强制更新并提交"
           fi
