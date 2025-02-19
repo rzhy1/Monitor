@@ -2,6 +2,15 @@ name: Monitor ZTB Changes
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  release:
+    types:
+      - released
   schedule:
     - cron: '0 * * * *'  # 每小时执行一次
 
@@ -115,6 +124,7 @@ jobs:
           with open(state_file, 'w') as f:
               json.dump(current_states, f)
               print(f"已保存当前状态到文件 {state_file}")
+              cat {state_file}
           EOF
 
       - name: Commit and push state file
