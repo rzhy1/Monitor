@@ -28,10 +28,10 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=2331
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=2332
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=3508
-        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&channelId=3509
-        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&channelId=3510
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=3509
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=3510
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=3511
-        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&channelId=3512
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=3512
 
     steps:
       - name: Checkout repository
