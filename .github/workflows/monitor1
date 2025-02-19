@@ -1,0 +1,137 @@
+name: Monitor ZTB Changes
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  release:
+    types:
+      - released
+  schedule:
+    - cron: '0 * * * *'  # 每小时执行一次
+
+permissions:
+  contents: write
+
+jobs:
+  check_url_changes:
+    runs-on: ubuntu-latest
+
+    env:
+      SCTKEY: ${{ secrets.SCTKEY }}  # Server酱的 SCKEY，存储在 GitHub Secrets 中
+      CHECK_URLS: |
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=2331
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=2332
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=3508
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&channelId=3509
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&channelId=3510
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&status=5&channelId=3511
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=城市轨道交通&channelId=3512
+        
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Check for URL changes
+        id: check_changes
+        run: |
+          python - <<EOF
+          import os
+          import json
+          import hashlib
+          import requests
+
+          headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+          }
+
+          urls = os.getenv("CHECK_URLS").splitlines()
+          print(f"开始检查 {len(urls)} 个 URL")
+
+          state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state.json')
+
+          previous_states = {}
+          if os.path.exists(state_file):
+              with open(state_file, 'r') as f:
+                  previous_states = json.load(f)
+              print(f"从文件 {state_file} 加载了之前的状态，共 {len(previous_states)} 条记录")
+          else:
+              print(f"状态文件 {state_file} 不存在，将初始化新文件")
+
+          current_states = {}
+          changed_urls = []
+
+          for url in urls:
+              print(f"正在检查 URL: {url}")
+              try:
+                  response = requests.get(url, headers=headers, timeout=10)
+                  response.raise_for_status()
+
+                  content = response.text.strip().replace('\r', '').replace('\n', '')
+                  hash_value = hashlib.md5(content.encode('utf-8')).hexdigest()
+
+                  current_states[url] = hash_value
+
+                  if url in previous_states and previous_states[url] != hash_value:
+                      changed_urls.append(url)
+                      print(f"检测到变化：{url}")
+                  elif url not in previous_states:
+                      print(f"首次记录该 URL：{url}")
+                  else:
+                      print(f"无变化：{url}")
+
+              except Exception as e:
+                  print(f"Error checking URL {url}: {e}")
+
+          if changed_urls:
+            message = "以下链接的内容发生了变化：\n" + "\n".join(changed_urls)
+            print(message)
+
+            # 发送通知到企业微信机器人
+            webhook_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=fb981fae-2265-4584-a007-2e122fb45237"
+            data = {
+                "msgtype": "text",
+                "text": {
+                    "content": message
+                }
+            }
+            requests.post(webhook_url, json=data)
+          else:
+              print("未检测到任何变化")
+
+          with open(state_file, 'w') as f:
+              json.dump(current_states, f)
+              print(f"已保存当前状态到文件 {state_file}")
+          EOF
+          
+      - name: Commit and push state file
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet url_state.json; then
+              echo "No changes detected in url_state.json."
+          else
+              echo "Changes detected in url_state.json, preparing to commit..."
+              git add url_state.json
+              git commit -m "Update URL states" || echo "No changes to commit."
+              git push origin HEAD || echo "Push failed, please check permissions or network issues."
+              echo "状态文件已更新并提交"
+          fi
