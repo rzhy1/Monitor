@@ -2,6 +2,15 @@ name: Monitor ZTB Changes
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  release:
+    types:
+      - released
   schedule:
     - cron: '0 * * * *'  # 每小时执行一次
 
