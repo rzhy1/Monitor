@@ -41,7 +41,7 @@ jobs:
          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "中标公示",
          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "中标结果",
          "https://raw.githubusercontent.com/rzhy1/aria2-static-build/refs/heads/main/.github/workflows/build_and_release.yml": "测试专用"}
-      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }} # 使用 GitHub Secrets 存储的 Webhook 地址
+      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
 
     steps:
       - name: Checkout repository
@@ -117,15 +117,15 @@ jobs:
             print(message)
 
             # 从 GitHub Secrets 获取 Webhook 地址列表
-            webhook_urls_json = os.getenv("WEBHOOK_URLS")
-            if not webhook_urls_json:
-                print("Error: WEBHOOK_URLS is not set.")
+            webhook_url_json = os.getenv("WEBHOOK_URL")
+            if not webhook_url_json:
+                print("Error: WEBHOOK_URL is not set.")
                 exit(1)
 
             try:
-                webhook_list = json.loads(webhook_urls_json)
+                webhook_list = json.loads(webhook_url_json)
             except json.JSONDecodeError:
-                print("Error: Invalid JSON format in WEBHOOK_URLS.")
+                print("Error: Invalid JSON format in WEBHOOK_URL.")
                 exit(1)
 
             for webhook_info in webhook_list:
