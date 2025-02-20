@@ -73,8 +73,8 @@ jobs:
             "Cache-Control": "no-cache",
             "Pragma": "no-cache"
           }
-
           urls = os.getenv("CHECK_URLS").splitlines()
+          url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
           print(f"开始检查 {len(urls)} 个 URL")
 
           state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state1.json')
