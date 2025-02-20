@@ -64,6 +64,7 @@ jobs:
         run: |
           python - <<EOF
           import os
+          import re
           import json
           import hashlib
           import requests
@@ -115,7 +116,7 @@ jobs:
                   print(f"Error checking URL {url}: {e}")
 
           if changed_urls:
-              message = "以下内容发生了变化： \n\n" + "\n\n".join(filter(lambda x: x.strip(), changed_urls))
+              message = re.sub(r'\n{3,}', '\n\n', "以下内容发生了变化：\n\n" + "\n\n".join(url.strip().replace('\n','') for url in changed_urls if url.strip()))
               print(f"检测到内容变化，准备发送通知:\n{message}")
 
               sckey = os.getenv("SCTKEY")
