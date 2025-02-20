@@ -113,8 +113,8 @@ jobs:
                   print(f"Error checking URL {url}: {e}")
 
           if changed_urls:
-              message = "以下链接的内容发生了变化：\\n" + "\\n".join(changed_urls)
-              print(f"检测到内容变化，准备发送通知:\\n{message}")
+              message = "以下链接的内容发生了变化：\n\n" + "\n\n".join(changed_urls)
+              print(f"检测到内容变化，准备发送通知:\n\n{message}")
 
               sckey = os.getenv("SCTKEY")
               if not sckey:
