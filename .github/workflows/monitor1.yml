@@ -12,8 +12,7 @@ on:
     types:
       - released
   schedule:
-    - cron: '0 8-20 * * *'
-      timezone: Asia/Shanghai
+    - cron: '0 0-12 * * *'
 
 permissions:
   contents: write
@@ -23,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SCTKEY: ${{ secrets.SCTKEY }}  # Server酱的 SCKEY，存储在 GitHub Secrets 中
+      SCTKEY: ${{ secrets.SCTKEY }}
       CHECK_URLS: |
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332
@@ -31,7 +30,19 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511
-        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512        
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
+        https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md
+        https://raw.githubusercontent.com/rzhy1/aria2-static-build/refs/heads/main/.github/workflows/build_and_release.yml
+      URL_DESCRIPTIONS: |
+        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "招标计划发布",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "招标预公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "特别提醒项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "招标核准项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "招标文件公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "中标公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "中标结果",
+         "https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md": "README 文件",
+         "https://raw.githubusercontent.com/rzhy1/aria2-static-build/refs/heads/main/.github/workflows/build_and_release.yml": "aria2c 文件"}       
 
     steps:
       - name: Checkout repository
@@ -52,6 +63,7 @@ jobs:
         run: |
           python - <<EOF
           import os
+          import re
           import json
           import hashlib
           import requests
@@ -90,8 +102,9 @@ jobs:
                   current_states[url] = hash_value
 
                   if url in previous_states and previous_states[url] != hash_value:
-                      changed_urls.append(url)
-                      print(f"检测到变化：{url}")
+                      description = url_descriptions.get(url, "未知来源")
+                      changed_urls.append(f"{description}: {url}")
+                      print(f"检测到变化：{description} ({url})")
                   elif url not in previous_states:
                       print(f"首次记录该 URL：{url}")
                   else:
