@@ -34,13 +34,13 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
         https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md
       URL_DESCRIPTIONS: |
-        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "城市轨道交通交通项目1",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "城市轨道交通交通项目2",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "城市轨道交通交通项目3",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "城市轨道交通交通项目4",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "城市轨道交通交通项目5",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "城市轨道交通交通项目6",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "城市轨道交通交通项目7",
+        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "招标计划发布",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "招标预公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "特别提醒项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "招标核准项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "招标文件公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "中标公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "中标结果",
          "https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md": "README 文件"}
 
     steps:
@@ -113,7 +113,7 @@ jobs:
                   print(f"Error checking URL {url}: {e}")
 
           if changed_urls:
-              message = "以下链接的内容发生了变化： \n" + " \n".join(changed_urls)
+              message = "以下链接的内容发生了变化： \n\n" + " \n".join(changed_urls)
               print(f"检测到内容变化，准备发送通知:\n{message}")
 
               sckey = os.getenv("SCTKEY")
