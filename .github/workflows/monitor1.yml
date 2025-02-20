@@ -117,9 +117,9 @@ jobs:
             print(message)
 
             # 从 GitHub Secrets 获取 Webhook 地址列表
-            _json = os.getenv("")
-            if not _json:
-                print("Error:  is not set.")
+            webhook_url_json = os.getenv("WEBHOOK_URL")
+            if not webhook_url_json:
+                print("Error: WEBHOOK_URL is not set.")
                 exit(1)
 
             try:
