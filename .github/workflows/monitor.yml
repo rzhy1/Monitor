@@ -32,8 +32,7 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
-        https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md
-        
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -79,18 +78,6 @@ jobs:
           current_states = {}
           changed_urls = []
 
-          # 定义每个 URL 的标题映射
-          url_titles = {
-              "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "标题1",
-              "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "标题2",
-              "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "标题3",
-              "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "标题4",
-              "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "标题5",
-              "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "标题6",
-              "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "标题7",
-              "https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md": "标题8",
-          }
-          
           for url in urls:
               print(f"正在检查 URL: {url}")
               try:
@@ -103,7 +90,7 @@ jobs:
                   current_states[url] = hash_value
 
                   if url in previous_states and previous_states[url] != hash_value:
-                      changed_urls[url] = url_titles.get(url, "默认标题")  # 如果 URL 有变化，记录标题
+                      changed_urls.append(url)
                       print(f"检测到变化：{url}")
                   elif url not in previous_states:
                       print(f"首次记录该 URL：{url}")
@@ -122,20 +109,19 @@ jobs:
                   print("Error: SCTKEY is not set or empty.")
               else:
                   notify_url = f"https://sctapi.ftqq.com/{sckey}.send"
-                  for url, title in changed_urls.items():
-                      data = {
-                          "title": f"{title} - 内容更新",
-                          "desp": f"链接 {url} 的内容发生了变化"
-                      }
-                      try:
-                          response = requests.post(notify_url, data=data, timeout=10)
-                          if response.status_code == 200:
-                              print(f"通知发送成功（标题: {title}）")
-                              print(f"Server 酱返回数据: {response.json()}")
-                          else:
-                              print(f"通知发送失败，状态码: {response.status_code}, 响应内容: {response.text}")
-                      except Exception as e:
-                          print(f"Error sending notification for URL {url}: {e}")
+                  data = {
+                      "title": "招标信息更新",
+                      "desp": message
+                  }
+                  try:
+                      response = requests.post(notify_url, data=data, timeout=10)
+                      if response.status_code == 200:
+                          print("通知发送成功")
+                          print(f"Server 酱返回数据: {response.json()}")
+                      else:
+                          print(f"通知发送失败，状态码: {response.status_code}, 响应内容: {response.text}")
+                  except Exception as e:
+                      print(f"Error sending notification: {e}")
           else:
               print("未检测到任何变化")
 
