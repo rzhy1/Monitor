@@ -12,8 +12,7 @@ on:
     types:
       - released
   schedule:
-    - cron: '0 8-20 * * *'
-      timezone: Asia/Shanghai
+    - cron: '0 0-12 * * *'
 
 permissions:
   contents: write
