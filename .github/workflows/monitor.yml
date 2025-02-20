@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SCTKEY: ${{ secrets.SCTKEY }}  # Server酱的 SCKEY，存储在 GitHub Secrets 中
+      SCTKEY: ${{ secrets.SCTKEY }} 
       CHECK_URLS: |
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332
@@ -33,6 +33,15 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
         https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md
+      URL_DESCRIPTIONS: |
+        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "城市轨道交通交通项目1",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "城市轨道交通交通项目2",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "城市轨道交通交通项目3",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "城市轨道交通交通项目4",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "城市轨道交通交通项目5",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "城市轨道交通交通项目6",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "城市轨道交通交通项目7",
+         "https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md": "README 文件"}
 
     steps:
       - name: Checkout repository
@@ -64,6 +73,7 @@ jobs:
           }
 
           urls = os.getenv("CHECK_URLS").splitlines()
+          url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
           print(f"开始检查 {len(urls)} 个 URL")
 
           state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state.json')
@@ -91,8 +101,9 @@ jobs:
                   current_states[url] = hash_value
 
                   if url in previous_states and previous_states[url] != hash_value:
-                      changed_urls.append(url)
-                      print(f"检测到变化：{url}")
+                      description = url_descriptions.get(url, "未知来源")
+                      changed_urls.append(f"{description}: {url}")
+                      print(f"检测到变化：{description} ({url})")
                   elif url not in previous_states:
                       print(f"首次记录该 URL：{url}")
                   else:
