@@ -66,15 +66,24 @@ jobs:
       - name: Check for URL changes
         id: check_changes
         run: |
-          python - <<EOF
+          python - << "EOF"
+          import os
           import os
           import re
           import json
           import hashlib
           import requests
 
+          USER_AGENTS = [
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+              "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0",
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/119.0"
+          ]
+
           headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "User-Agent": random.choice(USER_AGENTS),
             "Cache-Control": "no-cache",
             "Pragma": "no-cache"
           }
@@ -115,7 +124,8 @@ jobs:
                       print(f"首次记录该 URL：{url}")
                   else:
                       print(f"无变化：{url}")
-
+                  time.sleep(random.uniform(1, 3))
+                  
               except Exception as e:
                   print(f"Error checking URL {url}: {e}")
 
