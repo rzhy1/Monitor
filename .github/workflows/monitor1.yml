@@ -46,8 +46,6 @@ jobs:
          "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "杭州建设项目招标预公示",
          "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "杭州建设项目招标文件公示",
          "https://raw.githubusercontent.com/rzhy1/aria2-static-build/refs/heads/main/.github/workflows/build_and_release.yml": "测试专用"}
-      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
