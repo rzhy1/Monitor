@@ -66,9 +66,7 @@ jobs:
       - name: Check for URL changes
         id: check_changes
         run: |
-          export TERM=dumb
-          echo "Current TERM: $TERM"
-          python - <<EOF
+          python - << "EOF"
           import os
           import re
           import random
