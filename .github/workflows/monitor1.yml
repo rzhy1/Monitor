@@ -63,6 +63,7 @@ jobs:
       - name: Check for URL changes
         id: check_changes
         run: |
+          webhook_urls="${{ secrets.WEBHOOK_URLS }}"
           python - << "EOF"
           import os
           import re
