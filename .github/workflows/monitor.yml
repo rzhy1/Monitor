@@ -12,7 +12,7 @@ on:
     types:
       - released
   schedule:
-    - cron: '0 0-12 * * *'
+    - cron: '0 22-23,0-16 * * *'
 
 permissions:
   contents: write
