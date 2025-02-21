@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SCTKEY: ${{ secrets.SCTKEY }}
+      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }}
       CHECK_URLS: |
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332
@@ -59,13 +60,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests
-          sudo apt-get install -y jq
-          pip install pyjq
 
       - name: Check for URL changes
         id: check_changes
         run: |
-          webhook_urls=$(echo "${{ secrets.WEBHOOK_URLS }}" | jq -c '.')
           python - << "EOF"
           import os
           import re
