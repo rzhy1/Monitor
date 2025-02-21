@@ -63,6 +63,7 @@ jobs:
       - name: Check for URL changes
         id: check_changes
         run: |
+          echo "::group::Checking URL Changes"
           python - << "EOF"
           import os
           import re
@@ -157,7 +158,7 @@ jobs:
                     }
                 }
                 try:
-                    response = requests.post(webhook_urls, json=data, timeout=10)
+                    response = requests.post(, json=data, timeout=10)
                     if response.status_code == 200:
                         print(f"通知发送成功: {note}")
                         print(f"企业微信返回数据: {response.json()}")
@@ -174,6 +175,7 @@ jobs:
             json.dump(current_states, f)
             print(f"已保存当前状态到文件 {state_file}")
           EOF
+          echo "::endgroup::"
           
       - name: Commit and push state file
         run: |
