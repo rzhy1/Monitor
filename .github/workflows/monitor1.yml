@@ -157,7 +157,7 @@ jobs:
                 except requests.exceptions.Timeout:
                     print(f"请求超时，请检查网络连接或目标服务器状态: {note}")
                 except requests.exceptions.RequestException as e:
-                    print(f"请求过程中发生错误: {e}，Webhook 地址: {note}")
+                    print(f"请求过程中发生错误: {e}， {note}")
           else:
             print("未检测到任何变化")
 
