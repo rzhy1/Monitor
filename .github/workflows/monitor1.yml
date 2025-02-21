@@ -125,7 +125,8 @@ jobs:
                       print(f"首次记录该 URL：{url}")
                   else:
                       print(f"无变化：{url}")
-
+                  time.sleep(random.uniform(1, 3))
+                  
               except Exception as e:
                   print(f"Error checking URL {url}: {e}")
 
