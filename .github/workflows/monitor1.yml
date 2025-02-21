@@ -31,23 +31,17 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
-        https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxjhfb
-        https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs
-        https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj
         https://raw.githubusercontent.com/rzhy1/aria2-static-build/refs/heads/main/.github/workflows/build_and_release.yml
       URL_DESCRIPTIONS: |
-        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "杭州地铁特别提醒项目",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxjhfb": "杭州建设项目招标计划发布",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "杭州建设项目招标预公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "杭州建设项目招标文件公示",
+        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "招标计划发布",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "招标预公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "特别提醒项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "招标核准项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "招标文件公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "中标公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "中标结果",
          "https://raw.githubusercontent.com/rzhy1/aria2-static-build/refs/heads/main/.github/workflows/build_and_release.yml": "测试专用"}
-      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }}
+      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }} # 使用 GitHub Secrets 存储的 Webhook 地址
 
     steps:
       - name: Checkout repository
@@ -135,9 +129,9 @@ jobs:
                 exit(1)
 
             for webhook_info in webhook_list:
-                webhook_urls = webhook_info.get("url")
+                webhook_url = webhook_info.get("url")
                 note = webhook_info.get("note", "")
-                if not webhook_urls:
+                if not webhook_url:
                     print(f"Warning: Missing URL in entry with note '{note}'. Skipping...")
                     continue
 
@@ -148,16 +142,16 @@ jobs:
                     }
                 }
                 try:
-                    response = requests.post(webhook_urls, json=data, timeout=10)
+                    response = requests.post(webhook_url, json=data, timeout=10)
                     if response.status_code == 200:
-                        print(f"通知发送成功至: {note}")
+                        print(f"通知发送成功至 {webhook_url} (Note: {note})")
                         print(f"企业微信返回数据: {response.json()}")
                     else:
-                        print(f"通知发送失败至: {note}，状态码: {response.status_code}, 响应内容: {response.text}")
+                        print(f"通知发送失败至 {webhook_url} (Note: {note})，状态码: {response.status_code}, 响应内容: {response.text}")
                 except requests.exceptions.Timeout:
-                    print(f"请求超时，请检查网络连接或目标服务器状态: {note}")
+                    print(f"请求超时，请检查网络连接或目标服务器状态: {webhook_url} (Note: {note})")
                 except requests.exceptions.RequestException as e:
-                    print(f"请求过程中发生错误: {e}， {note}")
+                    print(f"请求过程中发生错误: {e}，Webhook 地址: {webhook_url} (Note: {note})")
           else:
             print("未检测到任何变化")
 
