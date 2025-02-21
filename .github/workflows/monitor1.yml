@@ -47,7 +47,7 @@ jobs:
          "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "杭州建设项目招标预公示",
          "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "杭州建设项目招标文件公示",
          "https://raw.githubusercontent.com/rzhy1/aria2-static-build/refs/heads/main/.github/workflows/build_and_release.yml": "测试专用"}
-      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }}
 
     steps:
       - name: Checkout repository
@@ -123,21 +123,21 @@ jobs:
             print(message)
 
             # 从 GitHub Secrets 获取 Webhook 地址列表
-            webhook_url_json = os.getenv("WEBHOOK_URL")
-            if not webhook_url_json:
-                print("Error: WEBHOOK_URL is not set.")
+            webhook_urls_json = os.getenv("WEBHOOK_URLS")
+            if not webhook_urls_json:
+                print("Error: WEBHOOK_URLS is not set.")
                 exit(1)
 
             try:
-                webhook_list = json.loads(webhook_url_json)
+                webhook_list = json.loads(webhook_urls_json)
             except json.JSONDecodeError:
-                print("Error: Invalid JSON format in WEBHOOK_URL.")
+                print("Error: Invalid JSON format in WEBHOOK_URLS.")
                 exit(1)
 
             for webhook_info in webhook_list:
-                webhook_url = webhook_info.get("url")
+                webhook_urls = webhook_info.get("url")
                 note = webhook_info.get("note", "")
-                if not webhook_url:
+                if not webhook_urls:
                     print(f"Warning: Missing URL in entry with note '{note}'. Skipping...")
                     continue
 
@@ -148,7 +148,7 @@ jobs:
                     }
                 }
                 try:
-                    response = requests.post(webhook_url, json=data, timeout=10)
+                    response = requests.post(webhook_urls, json=data, timeout=10)
                     if response.status_code == 200:
                         print(f"通知发送成功至: {note}")
                         print(f"企业微信返回数据: {response.json()}")
