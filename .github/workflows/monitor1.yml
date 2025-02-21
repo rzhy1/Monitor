@@ -67,6 +67,7 @@ jobs:
         id: check_changes
         run: |
           export TERM=dumb
+          echo "Current TERM: $TERM"
           python - <<EOF
           import os
           import re
