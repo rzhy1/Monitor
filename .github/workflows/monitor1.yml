@@ -22,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      TERM: dumb
       SCTKEY: ${{ secrets.SCTKEY }}
       CHECK_URLS: |
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331
@@ -67,6 +66,7 @@ jobs:
       - name: Check for URL changes
         id: check_changes
         run: |
+          export TERM=dumb
           python - <<EOF
           import os
           import re
