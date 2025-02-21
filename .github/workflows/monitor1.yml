@@ -63,7 +63,6 @@ jobs:
       - name: Check for URL changes
         id: check_changes
         run: |
-          echo "::group::Checking URL Changes"
           python - << "EOF"
           import os
           import re
@@ -175,7 +174,6 @@ jobs:
             json.dump(current_states, f)
             print(f"已保存当前状态到文件 {state_file}")
           EOF
-          echo "::endgroup::"
           
       - name: Commit and push state file
         run: |
