@@ -96,6 +96,7 @@ jobs:
 
           current_states = {}
           changed_urls = []
+          changes = {}
 
           for url in urls:
               try:
