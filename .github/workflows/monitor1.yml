@@ -61,7 +61,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4
 
-      - name: Check for URL changes and notify via WeChat Work Bot
+      - name: Check for URL changes
         id: check_changes
         run: |
           python - << "EOF"
