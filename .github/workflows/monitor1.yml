@@ -133,23 +133,14 @@ jobs:
           # 输出变化的内容
           if changes:
               for url, content in changes.items():
-                  print(f"网页 {url} 有更新：\n{content}\n")
-
-                  # 构造消息内容
-                  description = url_descriptions.get(url, "未知页面")
-                  message = {
-                      "msgtype": "markdown",
-                      "markdown": {
-                          "content": f"### 页面更新通知\n> **页面**: {description}\n> **链接**: {url}\n> **更新内容**: \n```\n{content[:100]}...\n```"
-                      }
-                  }
+                  print(f"网页 {url} 有更新")
 
                   # 发送消息到企业微信机器人
-                  for webhook_url in webhook_urls:
+                  for webhook_urls in webhook_urls:
                       try:
-                          response = requests.post(webhook_url, json=message)
+                          response = requests.post(webhook_urls, json=message)
                           if response.status_code == 200:
-                              print(f"成功发送通知到企业微信机器人: {webhook_url}")
+                              print(f"成功发送通知到企业微信机器人: {webhook_urls}")
                           else:
                               print(f"发送通知失败，状态码: {response.status_code}")
                       except Exception as e:
