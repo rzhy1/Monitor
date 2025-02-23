@@ -107,21 +107,21 @@ jobs:
                       # 如果Last-Modified和ETag没有变化，跳过后续处理
                       if previous_states.get(url, {}).get('last_modified') == last_modified and \
                          previous_states.get(url, {}).get('etag') == etag:
-                        continue
+                          continue
 
-                # 发送GET请求获取内容
-                response = requests.get(url, headers=headers)
+                  # 发送GET请求获取内容
+                  response = requests.get(url, headers=headers)
                   if response.status_code == 200:
-                    soup = BeautifulSoup(response.text, 'html.parser')
+                      soup = BeautifulSoup(response.text, 'html.parser')
 
                       # 移除所有脚本和样式元素
-                    for script in soup(["script", "style"]):
+                      for script in soup(["script", "style"]):
                           script.decompose()
 
                       # 获取主要内容
                       main_content = soup.find('div', {'class': 'main-content'})  # 请根据实际HTML结构调整选择器
 
-                    if main_content:
+                      if main_content:
                           # 提取并清理文本内容
                           text = main_content.get_text(separator='\n', strip=True)
                           cleaned_text = '\n'.join([line for line in text.split('\n') if line.strip()])
