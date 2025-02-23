@@ -132,7 +132,7 @@ jobs:
           # 输出变化的内容
           if changes:
               for url, content in changes.items():
-                  print(f"网页 {url} 有更新：\n{content}\n")
+                  print(f"网页 {url} 有更新")
           else:
               print("没有检测到任何变化")
 
