@@ -148,8 +148,6 @@ jobs:
                           # 比较哈希值
                           if previous_states.get(url, {}).get('hash') != current_hash:
                               changes[url] = cleaned_text
-                      else:
-                          print(f"未找到主要内容区域: {url}")
                   else:
                       print(f"请求失败，状态码: {response.status_code} - {url}")
               except Exception as e:
