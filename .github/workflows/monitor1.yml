@@ -81,7 +81,7 @@ jobs:
 
           urls = os.getenv("CHECK_URLS").splitlines()
           url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
-          webhook_urls_raw = os.getenv("WEBHOOK_URLS")  # 获取企业微信机器人 Webhook 地址
+          webhook_urls_raw = os.getenv("WEBHOOK_URLS")
           print(f"开始检查 {len(urls)} 个 URL")
 
           state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state1.json')
@@ -135,7 +135,6 @@ jobs:
 
           # 如果有变化，发送通知
           if changed_urls:
-              message = "招标信息有变化：\n" + "\n".join(changed_urls)
               message_content = []
               for url in changed_urls:
                   description = url_descriptions.get(url, "未知来源")
@@ -147,7 +146,6 @@ jobs:
                       "content": "### 网页更新通知\n" + "\n".join(message_content)
                   }
               }
-              message = "招标信息有变化：\n" + "\n".join(changed_urls)
 
               # 解析 Webhook 地址
               try:
@@ -170,11 +168,11 @@ jobs:
                   try:
                       response = requests.post(webhook_url, json=message, timeout=10)
                       if response.status_code == 200:
-                          print(f"成功发送通知到企业微信机器人: {note or webhook_url}")
+                          print(f"成功发送通知到企业微信机器人: {note}")
                       else:
-                          print(f"发送通知失败，状态码: {response.status_code}, URL: {webhook_url}")
+                          print(f"发送通知失败，状态码: {response.status_code}, {note}")
                   except Exception as e:
-                      print(f"发送通知失败: {e}, URL: {webhook_url}")
+                      print(f"发送通知失败: {e}, {note}")
           else:
               print("未检测到任何变化")
 
