@@ -138,13 +138,13 @@ jobs:
               message_content = []
               for url in changed_urls:
                   description = url_descriptions.get(url, "未知来源")
-                  message_content.append(f"{description}: {url}")
+                  message_content.append(f"> [{description}]({url})  已更新")
                   print(f"检测到变化：{description} ({url})")
 
               message = {
                   "msgtype": "markdown",
                   "markdown": {
-                      "content": "### 网页更新通知\n" + "\n".join(message_content)
+                      "content": "### 网页更新通知：\n" + "\n".join(message_content)
                   }
               }
 
