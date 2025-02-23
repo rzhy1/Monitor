@@ -135,6 +135,7 @@ jobs:
 
           # 如果有变化，发送通知
           if changed_urls:
+              message = "招标信息有变化：\n" + "\n".join(changed_urls)
               message_content = []
               for url in changed_urls:
                   description = url_descriptions.get(url, "未知来源")
@@ -146,6 +147,7 @@ jobs:
                       "content": "### 网页更新通知\n" + "\n".join(message_content)
                   }
               }
+              message = "招标信息有变化：\n" + "\n".join(changed_urls)
 
               # 解析 Webhook 地址
               try:
