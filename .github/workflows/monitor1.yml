@@ -125,7 +125,7 @@ jobs:
                           script.decompose()
 
                       # 获取主要内容
-                      main_content = soup.find('div', {'class': 'main-content'})  # 请根据实际HTML结构调整选择器
+                      main_content = soup.find('div', {'class': 'menu menu_time'})  # 请根据实际HTML结构调整选择器
 
                       if main_content is None:
                           # 如果找不到主要内容区域，尝试提取整个页面的文本
