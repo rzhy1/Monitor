@@ -81,7 +81,7 @@ jobs:
 
           urls = os.getenv("CHECK_URLS").splitlines()
           url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
-          webhook_urls = os.getenv("WEBHOOK_URLS").splitlines()  # 获取企业微信机器人 Webhook 地址
+          webhook_url = os.getenv("WEBHOOK_URLS").splitlines()  # 获取企业微信机器人 Webhook 地址
           print(f"开始检查 {len(urls)} 个 URL")
 
           state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state1.json')
