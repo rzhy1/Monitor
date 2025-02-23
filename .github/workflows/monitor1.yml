@@ -143,7 +143,7 @@ jobs:
                       try:
                           response = requests.post(webhook_url, json=message)
                           if response.status_code == 200:
-                              print(f"成功发送通知到企业微信机器人: {webhook_url")
+                              print(f"成功发送通知到企业微信机器人: {webhook_url}")
                           else:
                               print(f"发送通知失败，状态码: {response.status_code}")
                       except Exception as e:
