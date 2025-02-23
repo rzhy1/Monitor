@@ -108,7 +108,13 @@ jobs:
                           script.decompose()
 
                       # 获取主要内容
-                      main_content = soup.find('div', {'class': 'menu menu_time'})  # 根据实际HTML结构调整选择器
+                      content_selectors = [
+                          {'class': 'menu menu_time'}, 
+                          {'id': 'main-content'},
+                          {'role': 'main'}
+                      ]
+                      for selector in content_selectors:
+                          main_content = soup.find('div', selector)
 
                       if main_content is None:
                           text = soup.get_text(separator='\n', strip=True)
