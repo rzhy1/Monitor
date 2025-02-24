@@ -107,7 +107,7 @@ jobs:
           changed_urls = []
 
           for url in urls:
-              print(f"正在检查 URL: {url}")
+              # print(f"正在检查 URL: {url}")
               try:
                   response = requests.get(url, headers=headers, timeout=10, verify=True)
                   response.raise_for_status()
@@ -121,7 +121,7 @@ jobs:
                   elif url not in previous_states:
                       print(f"首次记录该 URL：{url}")
                   else:
-                      print(f"无变化：{url}")
+                      #print(f"无变化：{url}")
                   time.sleep(random.uniform(1, 3))
                   
               except Exception as e:
