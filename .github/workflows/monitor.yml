@@ -120,7 +120,7 @@ jobs:
                       print(f"检测到变化：{description} ({url})")
                   elif url not in previous_states:
                       print(f"首次记录该 URL：{url}")
-                  else:
+                  #else:
                       #print(f"无变化：{url}")
                   time.sleep(random.uniform(1, 3))
                   
