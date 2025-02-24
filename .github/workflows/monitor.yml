@@ -114,7 +114,7 @@ jobs:
                   content_hash = hashlib.sha256(response.content).hexdigest()
                   current_states[url] = content_hash
 
-                  if url in previous_states and previous_states[url] != hash_value:
+                  if url in previous_states and previous_states[url] !=  content_hash:
                       description = url_descriptions.get(url, "未知来源")
                       changed_urls.append(f"{description}: {url}")
                       print(f"检测到变化：{description} ({url})")
