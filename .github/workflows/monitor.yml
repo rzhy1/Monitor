@@ -68,9 +68,9 @@ jobs:
         run: |
           python - << "EOF"
           import os
-          import os
           import re
           import json
+          import time
           import random
           import hashlib
           import requests
