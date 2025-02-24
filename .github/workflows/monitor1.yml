@@ -64,7 +64,6 @@ jobs:
       - name: Check for URL changes
         id: check_changes
         run: |
-          python - << "EOF"
           import os
           import json
           import hashlib
@@ -72,6 +71,24 @@ jobs:
           import random
           import requests
           from bs4 import BeautifulSoup
+          from requests.adapters import HTTPAdapter
+          from urllib3.util.retry import Retry
+
+          # 定义重试机制
+          def create_session_with_retries(retries=3, backoff_factor=0.3, status_forcelist=(500, 502, 503, 504)):
+              session = requests.Session()
+              retry_strategy = Retry(
+                  total=retries,
+                  read=retries,
+                  connect=retries,
+                  backoff_factor=backoff_factor,
+                  status_forcelist=status_forcelist,
+                  allowed_methods=["HEAD", "GET", "POST"]
+              )
+              adapter = HTTPAdapter(max_retries=retry_strategy)
+              session.mount("http://", adapter)
+              session.mount("https://", adapter)
+              return session
 
           headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
@@ -97,9 +114,12 @@ jobs:
           current_states = {}
           changed_urls = []
 
+          # 创建带重试机制的 Session
+          session = create_session_with_retries()
+
           for url in urls:
               try:
-                  response = requests.get(url, headers=headers)
+                  response = session.get(url, headers=headers, timeout=10)  # 使用 session.get
                   if response.status_code == 200:
                       soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -176,7 +196,7 @@ jobs:
                       continue
 
                   try:
-                      response = requests.post(webhook_url, json=message, timeout=10)
+                      response = session.post(webhook_url, json=message, timeout=10)  # 使用 session.post
                       if response.status_code == 200:
                           print(f"成功发送通知到企业微信机器人: {note}")
                       else:
@@ -190,7 +210,6 @@ jobs:
           with open(state_file, 'w') as f:
               json.dump(current_states, f)
               print(f"已保存当前状态到文件 {state_file}")
-          EOF
 
       - name: Commit and push state file
         run: |
