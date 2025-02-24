@@ -109,13 +109,10 @@ jobs:
           for url in urls:
               print(f"正在检查 URL: {url}")
               try:
-                  response = requests.get(url, headers=headers, timeout=10)
+                  response = requests.get(url, headers=headers, timeout=10, verify=True)
                   response.raise_for_status()
-
-                  content = ''.join(response.text.split())
-                  hash_value = hashlib.md5(content.encode('utf-8')).hexdigest()
-
-                  current_states[url] = hash_value
+                  content_hash = hashlib.sha256(response.content).hexdigest()
+                  current_states[url] = content_hash
 
                   if url in previous_states and previous_states[url] != hash_value:
                       description = url_descriptions.get(url, "未知来源")
@@ -170,7 +167,7 @@ jobs:
           else
               echo "Changes detected in url_state.json, preparing to commit..."
               git add url_state.json
-              git commit -m "Update URL states" || echo "No changes to commit."
+              git commit -m "Update URL monitoring states [skip ci]" 
               git push origin HEAD || echo "Push failed, please check permissions or network issues."
               echo "状态文件已更新并提交"
           fi
