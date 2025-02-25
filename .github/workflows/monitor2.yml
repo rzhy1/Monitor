@@ -137,7 +137,7 @@ jobs:
                   return
               notify_url = f"https://sctapi.ftqq.com/{sctkey}.send"
               data = {
-                  "title": "招标信息更新",
+                  "title": "有新的信息",
                   "desp": message
               }
               try:
@@ -201,7 +201,7 @@ jobs:
                       if url in previous_states and previous_states[url] != current_hash:
                           description = url_descriptions.get(url, "未知来源")
                           print(f"检测到变化：{description} ({url})")
-                          changed_urls.append(f"- {description}: {url}")
+                          changed_urls.append(f"> [{description}]({url})")
 
               # 如果检测到变化，发送通知
               if changed_urls:
