@@ -107,7 +107,7 @@ jobs:
                           element.decompose()
                   
                   # 移除注释
-                  for comment in soup.find_all(text=lambda t: isinstance(t, Comment)):
+                  for comment in soup.find_all(string=lambda t: isinstance(t, Comment)):
                       comment.extract()
 
                   # 定位主要内容
