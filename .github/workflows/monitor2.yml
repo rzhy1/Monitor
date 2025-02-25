@@ -3,10 +3,9 @@ name: Monitor URL Changes
 on:
   workflow_dispatch:
   push:
-    branches:
-      - "*"
+    branches: [ main ]
   schedule:
-    - cron: '0 23,0-13 * * *'  # 每天 7:00 到 21:00 每小时运行一次
+    - cron: '0 23,0-13 * * *'
 
 permissions:
   contents: write
@@ -16,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SCTKEY: ${{ secrets.SCTKEY }}
-      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }}
+      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS || '[]' }}
       CHECK_URLS: |
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332
@@ -41,6 +40,7 @@ jobs:
          "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "杭州建设项目 招标预公示",
          "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "杭州建设项目 招标文件公示",
          "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "测试专用"}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,193 +48,185 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
-          pip install requests beautifulsoup4
+          python -m pip install --upgrade pip
+          pip install \
+            requests==2.31.0 \
+            beautifulsoup4==4.12.2 \
+            urllib3==2.0.7
 
-      - name: Check for URL changes
-        id: check_changes
+      - name: Check and notify
         run: |
           python - << "EOF"
           import os
           import json
           import hashlib
-          import requests
-          import random
           import time
-          from bs4 import BeautifulSoup
+          import requests
+          from bs4 import BeautifulSoup, Comment
           from requests.adapters import HTTPAdapter
           from urllib3.util.retry import Retry
 
-          # 创建带有重试机制的 Session
-          def create_session_with_retries(retries=3, backoff_factor=0.3, status_forcelist=(500, 502, 503, 504)):
-              session = requests.Session()
-              retry_strategy = Retry(
-                  total=retries,
-                  read=retries,
-                  connect=retries,
-                  backoff_factor=backoff_factor,
-                  status_forcelist=status_forcelist,
-                  allowed_methods=["HEAD", "GET", "POST"]
-              )
-              adapter = HTTPAdapter(max_retries=retry_strategy)
-              session.mount("http://", adapter)
-              session.mount("https://", adapter)
-              return session
+          # 常量配置
+          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          STATE_FILE = "url_state.json"
+          CLEAN_TAGS = ['script', 'style', 'nav', 'footer', 'aside', 'header']
+          CONTENT_SELECTORS = [
+              ('div', {'class': 'menu menu_time'}),
+              ('div', {'id': 'main-content'}),
+              ('section', {'role': 'main'})
+          ]
 
-          # 检查 URL 内容并返回清理后的哈希值
-          def check_url(session, url, user_agent):
-              headers = {
-                  "User-Agent": user_agent,
-                  "Cache-Control": "no-cache",
-                  "Pragma": "no-cache"
-              }
-              try:
-                  response = session.get(url, headers=headers, timeout=10)
-                  response.raise_for_status()
-                  soup = BeautifulSoup(response.text, 'html.parser')
-                  # 移除脚本和样式标签
-                  for script in soup(["script", "style"]):
-                      script.decompose()
+          class Monitor:
+              def __init__(self):
+                  self.session = self.create_session()
+                  self.url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
+                  self.check_urls = [u.strip() for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
 
-                  # 尝试获取主要内容
-                  content_selectors = [
-                      ('div', {'class': 'menu menu_time'}),
-                      ('div', {'id': 'main-content'}),
-                      ('section', {'role': 'main'})
-                  ]
+              def create_session(self):
+                  """创建带重试机制的会话"""
+                  session = requests.Session()
+                  retry = Retry(
+                      total=3,
+                      backoff_factor=1,
+                      status_forcelist=[429, 500, 502, 503, 504],
+                      allowed_methods=['GET']
+                  )
+                  adapter = HTTPAdapter(max_retries=retry)
+                  session.mount('https://', adapter)
+                  session.mount('http://', adapter)
+                  return session
+
+              def clean_content(self, html):
+                  """清理HTML内容"""
+                  soup = BeautifulSoup(html, 'html.parser')
+                  
+                  # 移除干扰元素
+                  for tag in CLEAN_TAGS:
+                      for element in soup.find_all(tag):
+                          element.decompose()
+                  
+                  # 移除注释
+                  for comment in soup.find_all(text=lambda t: isinstance(t, Comment)):
+                      comment.extract()
+
+                  # 定位主要内容
                   main_content = None
-                  for tag, attrs in content_selectors:
-                      main_content = soup.find(tag, attrs=attrs)
-                      if main_content:
-                          break
+                  for selector in CONTENT_SELECTORS:
+                      main_content = soup.find(*selector)
+                      if main_content: break
+                  return main_content or soup
 
-                  if main_content is None:
-                      # 未找到主要内容区域，使用全页内容
-                      text = soup.get_text(separator='\n', strip=True)
-                      cleaned_text = '\n'.join([line for line in text.split('\n') if line.strip()])
-                      print(f"未找到主要内容区域，使用全页内容: {url}")
-                  else:
-                      # 提取主要内容
-                      text = main_content.get_text(separator='\n', strip=True)
-                      cleaned_text = '\n'.join([line for line in text.split('\n') if line.strip()])
-
-                  # 生成哈希值
-                  current_hash = hashlib.sha256(cleaned_text.encode()).hexdigest()
-                  return current_hash
-              except Exception as e:
-                  print(f"检查 URL {url} 时出错: {e}")
-                  return None
-              finally:
-                  time.sleep(random.uniform(1, 3))  # 添加随机延迟
-
-          # 发送 Server酱 通知
-          def send_ServerChan_notification(sctkey, title, message):
-              if not sctkey:
-                  print("SCTKEY 未设置或为空。")
-                  return
-              notify_url = f"https://sctapi.ftqq.com/{sctkey}.send"
-              data = {
-                  "title": "有新的信息",
-                  "desp": message
-              }
-              try:
-                  response = requests.post(notify_url, data=data, timeout=10)
-                  if response.status_code == 200:
-                      print("成功发送通知到 Server酱。")
-                  else:
-                      print(f"发送 Server酱 通知失败: {response.status_code}")
-              except Exception as e:
-                  print(f"发送 Server酱 通知出错: {e}")
-
-          # 发送企业微信通知
-          def send_wechat_notification(session, webhook_url, note, message):
-              payload = {
-                  "msgtype": "markdown",
-                  "markdown": {
-                      "content": "### 网页更新通知：\n" + "\n".join(message)
-                  }
-              }
-              try:
-                  response = session.post(webhook_url, json=payload, timeout=10)
-                  if response.status_code == 200:
-                      print(f"成功发送通知到企业微信机器人: {note}")
-                  else:
-                      print(f"发送企业微信通知失败: {response.status_code}, {note}")
-              except Exception as e:
-                  print(f"发送企业微信通知出错: {e}, {note}")
-
-          # 主函数
-          def main():
-              # 从环境变量获取密钥和 URL 列表
-              sctkey = os.getenv("SCTKEY")
-              webhook_urls_raw = os.getenv("WEBHOOK_URLS")
-              check_urls = os.getenv("CHECK_URLS").splitlines()
-              url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
-              # 固定 User-Agent
-              user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-              # 状态文件路径
-              state_file = os.path.join(os.environ['GITHUB_WORKSPACE'], 'url_state2.json')
-
-              # 读取之前的状态
-              previous_states = {}
-              if os.path.exists(state_file):
-                  with open(state_file, 'r') as f:
-                      previous_states = json.load(f)
-                  print(f"从文件 {state_file} 加载了之前的状态，共 {len(previous_states)} 条记录")
-              else:
-                  print(f"状态文件 {state_file} 不存在")
-
-              # 创建带重试机制的 Session
-              session = create_session_with_retries()
-
-              # 检查当前状态
-              current_states = {}
-              changed_urls = []
-
-              for url in check_urls:
-                  current_hash = check_url(session, url, user_agent)
-                  if current_hash:
-                      current_states[url] = current_hash
-                      if url in previous_states and previous_states[url] != current_hash:
-                          description = url_descriptions.get(url, "未知来源")
-                          print(f"检测到变化：{description} ({url})")
-                          changed_urls.append(f"> [{description}]({url})")
-
-              # 如果检测到变化，发送通知
-              if changed_urls:
-                  # 解析 Webhook 地址
+              def get_content_hash(self, url):
+                  """获取内容哈希值"""
                   try:
-                      if webhook_urls_raw.startswith('[') and webhook_urls_raw.endswith(']'):
-                          webhook_list = json.loads(webhook_urls_raw)
-                      else:
-                          webhook_list = [{"url": url.strip(), "note": ""} for url in webhook_urls_raw.splitlines()]
+                      response = self.session.get(
+                          url,
+                          headers={'User-Agent': USER_AGENT, 'Cache-Control': 'no-cache'},
+                          timeout=10
+                      )
+                      response.raise_for_status()
+                      
+                      cleaned = self.clean_content(response.text)
+                      text = cleaned.get_text('\n', strip=True)
+                      return hashlib.sha256(text.encode()).hexdigest()
                   except Exception as e:
-                      print(f"解析 WEBHOOK_URLS 出错: {e}")
-                      exit(1)
+                      print(f"[ERROR] 检查 {url} 失败: {str(e)}")
+                      return None
 
-                  # 发送 Server酱 通知
-                  send_ServerChan_notification(sctkey, "招标信息更新", "\n".join(changed_urls))
+              def load_state(self):
+                  """加载历史状态"""
+                  try:
+                      with open(STATE_FILE, 'r') as f:
+                          return json.load(f)
+                  except (FileNotFoundError, json.JSONDecodeError):
+                      return {}
 
-                  # 发送消息到企业微信机器人
-                  for webhook_info in webhook_list:
-                      webhook_url = webhook_info.get("url")
-                      note = webhook_info.get("note", "")
-                      if not webhook_url:
-                          print(f"警告: 在备注 '{note}' 的条目中缺少 URL，跳过...")
-                          continue
-                      send_wechat_notification(session, webhook_url, note, changed_urls)
-              else:
-                  print("未检测到任何变化")
+              def save_state(self, state):
+                  """保存当前状态"""
+                  try:
+                      with open(STATE_FILE, 'w') as f:
+                          json.dump(state, f, indent=2)
+                  except IOError as e:
+                      print(f"[ERROR] 保存状态失败: {str(e)}")
 
-              # 保存当前状态
-              with open(state_file, 'w') as f:
-                  json.dump(current_states, f)
+              def send_notifications(self, changed_urls):
+                  """发送双重通知"""
+                  # 准备消息内容
+                  plain_msg = []
+                  markdown_msg = []
+                  for url in changed_urls:
+                      desc = self.url_descriptions.get(url, "未知更新")
+                      plain_msg.append(f"• {desc}: {url}")
+                      markdown_msg.append(f"[{desc}]({url})")
+
+                  # Server酱通知
+                  if sctkey := os.getenv("SCTKEY"):
+                      self._send_serverchan("\n".join(plain_msg))
+
+                  # 企业微信通知
+                  if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
+                      self._send_wechatwork(markdown_msg, webhooks)
+
+              def _send_serverchan(self, content):
+                  """发送Server酱通知"""
+                  try:
+                      resp = requests.post(
+                          f"https://sctapi.ftqq.com/{os.getenv('SCTKEY')}.send",
+                          json={'title': '内容更新', 'desp': content[:2000]},
+                          timeout=15
+                      )
+                      resp.raise_for_status()
+                      print("Server酱通知成功")
+                  except Exception as e:
+                      print(f"[ERROR] Server酱通知失败: {str(e)}")
+
+              def _send_wechatwork(self, items, webhooks):
+                  """发送企业微信通知"""
+                  for webhook in webhooks:
+                      try:
+                          resp = self.session.post(
+                              webhook['url'],
+                              json={
+                                  "msgtype": "markdown",
+                                  "markdown": {
+                                      "content": "### 更新通知\n" + "\n".join(items)
+                                  }
+                              },
+                              timeout=15
+                          )
+                          if resp.status_code == 200:
+                              print(f"企业微信通知成功: {webhook.get('note')}")
+                          else:
+                              print(f"[ERROR] 企业微信通知失败: {resp.status_code}")
+                      except Exception as e:
+                          print(f"[ERROR] 企业微信通知异常: {str(e)}")
+
+              def run(self):
+                  """主执行流程"""
+                  previous_state = self.load_state()
+                  current_state = {}
+                  changed_urls = []
+
+                  for url in self.check_urls:
+                      if (current_hash := self.get_content_hash(url)):
+                          current_state[url] = current_hash
+                          if previous_state.get(url) != current_hash:
+                              changed_urls.append(url)
+                      time.sleep(1)  # 基础请求间隔
+
+                  if changed_urls:
+                      print(f"检测到 {len(changed_urls)} 项更新")
+                      self.send_notifications(changed_urls)
+                      self.save_state(current_state)
+                  else:
+                      print("未检测到变化")
 
           if __name__ == "__main__":
-              main()
+              Monitor().run()
           EOF
 
       - name: Commit and push state file
