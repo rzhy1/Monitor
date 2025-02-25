@@ -178,6 +178,12 @@ jobs:
               # 创建带重试机制的 Session
               session = create_session_with_retries()
 
+              # 如果状态文件不存在，创建一个空的 JSON 文件
+              if not os.path.exists(state_file):
+                  with open(state_file, 'w') as f:
+                      json.dump({}, f)
+                  print("状态文件不存在，已创建空的 url_state2.json")
+    
               # 读取之前的状态
               previous_states = {}
               if os.path.exists(state_file):
