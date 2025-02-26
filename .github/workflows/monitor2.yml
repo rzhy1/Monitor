@@ -165,7 +165,7 @@ jobs:
 
                   # Server酱通知
                   if sctkey := os.getenv("SCTKEY"):
-                      self._send_serverchan("\n".join(plain_msg))
+                      self._send_serverchan("\n\n".join(plain_msg))
 
                   # 企业微信通知
                   if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
