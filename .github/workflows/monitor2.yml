@@ -160,7 +160,7 @@ jobs:
                   markdown_msg = []
                   for url in changed_urls:
                       desc = self.url_descriptions.get(url, "未知更新")
-                      plain_msg.append(f"• {desc}: {url}")
+                      plain_msg.append(f"{desc}: {url}")
                       markdown_msg.append(f"[{desc}]({url})")
 
                   # Server酱通知
