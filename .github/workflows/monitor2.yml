@@ -222,7 +222,7 @@ jobs:
                       print(f"检测到 {len(changed_urls)} 项更新")
                       for url in changed_urls:
                         desc = self.url_descriptions.get(url, "未知更新")
-                        print(f"- {desc}: {url}")
+                        print(f"⭐ {desc}: {url}")
                       self.send_notifications(changed_urls)
                       self.save_state(current_state)
                   else:
