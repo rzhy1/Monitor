@@ -28,7 +28,7 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs
         https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj
         https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml
-        https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md
+        https://github.com/rzhy1/check-version/blob/main/check_version.py
       URL_DESCRIPTIONS: |
         {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
@@ -41,7 +41,7 @@ jobs:
          "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "杭州建设项目 招标预公示",
          "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "杭州建设项目 招标文件公示",
          "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "测试专用1",
-         "https://raw.githubusercontent.com/rzhy1/check-version/refs/heads/main/README.md": "测试专用2"}
+         "https://github.com/rzhy1/check-version/blob/main/check_version.py": "测试专用2"}
 
     steps:
       - name: Checkout repository
