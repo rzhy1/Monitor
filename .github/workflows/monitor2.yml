@@ -16,18 +16,30 @@ jobs:
     env:
       SCTKEY: ${{ secrets.SCTKEY }}
       WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS || '[]' }}
-      CONFIG_JSON: |
-        {
-          "urls": {
-            "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
-            "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
-            "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxjhfb": "杭州建设项目 招标计划发布"
-          },
-          "selectors": {
-            "main_content": ["div.main-content", "section.content"],
-            "remove_elements": ["script", "style", "footer"]
-          }
-        }
+      CHECK_URLS: |
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511
+        https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
+        https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxjhfb
+        https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs
+        https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj
+        https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml
+      URL_DESCRIPTIONS: |
+        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "杭州地铁特别提醒项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxjhfb": "杭州建设项目 招标计划发布",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "杭州建设项目 招标预公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "杭州建设项目 招标文件公示",
+         "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "测试专用"}
 
     steps:
       - name: Checkout repository
@@ -42,88 +54,194 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install \
-            aiohttp==3.9.3 \
-            aiohttp-retry==2.8.3 \
+            requests==2.31.0 \
             beautifulsoup4==4.12.2 \
-            lxml==5.2.1
+            urllib3==2.0.7
 
-      - name: Async check and notify
+      - name: Check and notify
         run: |
           python - << "EOF"
           import os
           import json
           import hashlib
-          import asyncio
-          from aiohttp import ClientSession, TCPConnector, ClientTimeout
-          from aiohttp_retry import RetryClient, ExponentialRetry
-          from bs4 import BeautifulSoup
+          import time
+          import requests
+          from bs4 import BeautifulSoup, Comment
+          from requests.adapters import HTTPAdapter
+          from urllib3.util.retry import Retry
 
-          class AsyncMonitor:
+          # 常量配置
+          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          STATE_FILE = "url_state2.json"
+          CLEAN_TAGS = ['script', 'style', 'nav', 'footer', 'aside', 'header']
+          CONTENT_SELECTORS = [
+              ('div', {'class': 'menu menu_time'}),
+              ('div', {'id': 'main-content'}),
+              ('section', {'role': 'main'})
+          ]
+
+          class Monitor:
               def __init__(self):
-                  self.config = json.loads(os.getenv("CONFIG_JSON"))
-                  self.urls = list(self.config["urls"].keys())
-                  self.state_file = "url_state.json"
-                  self.timeout = ClientTimeout(total=15)
-                  self.connector = TCPConnector(limit=10, ssl=False)
-                  self.retry_options = ExponentialRetry(
-                      attempts=3,
-                      start_timeout=2,
-                      max_timeout=10,
-                      exceptions={asyncio.TimeoutError}
+                  self.session = self.create_session()
+                  self.url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
+                  self.check_urls = [u.strip() for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
+
+              def create_session(self):
+                  """创建带重试机制的会话"""
+                  session = requests.Session()
+                  retry = Retry(
+                      total=3,
+                      backoff_factor=1,
+                      status_forcelist=[429, 500, 502, 503, 504],
+                      allowed_methods=['GET']
                   )
+                  adapter = HTTPAdapter(max_retries=retry)
+                  session.mount('https://', adapter)
+                  session.mount('http://', adapter)
+                  return session
 
-              async def fetch_hash(self, session, url):
-                  try:
-                      async with session.get(url, timeout=self.timeout) as response:
-                          # 流式哈希计算
-                          hasher = hashlib.sha256()
-                          async for chunk in response.content.iter_chunked(4096):
-                              hasher.update(chunk)
-                          
-                          html = await response.text()
-                          soup = BeautifulSoup(html, 'lxml')
-                          cleaned = self.clean_html(soup)
-                          return url, hasher.hexdigest()
-                  except Exception as e:
-                      print(f"Error fetching {url}: {type(e).__name__} - {str(e)}")
-                      return url, None
-
-              def clean_html(self, soup):
-                  # 高效清理策略
-                  for tag in self.config["selectors"]["remove_elements"]:
+              def clean_content(self, html):
+                  """清理HTML内容"""
+                  soup = BeautifulSoup(html, 'html.parser')
+                  
+                  # 移除干扰元素
+                  for tag in CLEAN_TAGS:
                       for element in soup.find_all(tag):
                           element.decompose()
+                  
+                  # 移除注释
+                  for comment in soup.find_all(string=lambda t: isinstance(t, Comment)):
+                      comment.extract()
 
-                  # 精确内容定位
-                  for selector in self.config["selectors"]["main_content"]:
-                      if content := soup.select_one(selector):
-                          return content
-                  return soup
+                  # 定位主要内容
+                  main_content = None
+                  for selector in CONTENT_SELECTORS:
+                      main_content = soup.find(*selector)
+                      if main_content: break
+                  return main_content or soup
 
-              async def check_urls(self):
-                  async with RetryClient(
-                      connector=self.connector,
-                      retry_options=self.retry_options,
-                      timeout=self.timeout
-                  ) as session:
-                      tasks = [self.fetch_hash(session, url) for url in self.urls]
-                      return await asyncio.gather(*tasks)
+              def get_content_hash(self, url):
+                  """获取内容哈希值"""
+                  try:
+                      response = self.session.get(
+                          url,
+                          headers={'User-Agent': USER_AGENT, 'Cache-Control': 'no-cache'},
+                          timeout=10
+                      )
+                      response.raise_for_status()
+                      
+                      cleaned = self.clean_content(response.text)
+                      text = cleaned.get_text('\n', strip=True)
+                      return hashlib.sha256(text.encode()).hexdigest()
+                  except Exception as e:
+                      print(f"[ERROR] 检查 {url} 失败: {str(e)}")
+                      return None
 
-              # 保持其他方法不变...
+              def load_state(self):
+                  """加载历史状态"""
+                  try:
+                      with open(STATE_FILE, 'r') as f:
+                          return json.load(f)
+                  except (FileNotFoundError, json.JSONDecodeError):
+                      return {}
+
+              def save_state(self, state):
+                  """保存当前状态"""
+                  try:
+                      with open(STATE_FILE, 'w') as f:
+                          json.dump(state, f, indent=2)
+                  except IOError as e:
+                      print(f"[ERROR] 保存状态失败: {str(e)}")
+
+              def send_notifications(self, changed_urls):
+                  """发送双重通知"""
+                  # 准备消息内容
+                  plain_msg = []
+                  markdown_msg = []
+                  for url in changed_urls:
+                      desc = self.url_descriptions.get(url, "未知更新")
+                      plain_msg.append(f"{desc}: {url}")
+                      markdown_msg.append(f"[{desc}]({url})")
+
+                  # Server酱通知
+                  if sctkey := os.getenv("SCTKEY"):
+                      self._send_serverchan("\n\n".join(plain_msg))
+
+                  # 企业微信通知
+                  if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
+                      self._send_wechatwork(markdown_msg, webhooks)
+
+              def _send_serverchan(self, content):
+                  """发送Server酱通知"""
+                  try:
+                      resp = requests.post(
+                          f"https://sctapi.ftqq.com/{os.getenv('SCTKEY')}.send",
+                          json={'title': '内容更新', 'desp': content[:2000]},
+                          timeout=15
+                      )
+                      resp.raise_for_status()
+                      print("Server酱通知成功")
+                  except Exception as e:
+                      print(f"[ERROR] Server酱通知失败: {str(e)}")
+
+              def _send_wechatwork(self, items, webhooks):
+                  """发送企业微信通知"""
+                  for webhook in webhooks:
+                      try:
+                          resp = self.session.post(
+                              webhook['url'],
+                              json={
+                                  "msgtype": "markdown",
+                                  "markdown": {
+                                      "content": "### 更新通知\n" + "\n".join(items)
+                                  }
+                              },
+                              timeout=15
+                          )
+                          if resp.status_code == 200:
+                              print(f"企业微信通知成功: {webhook.get('note')}")
+                          else:
+                              print(f"[ERROR] 企业微信通知失败: {resp.status_code}")
+                      except Exception as e:
+                          print(f"[ERROR] 企业微信通知异常: {str(e)}")
+
+              def run(self):
+                  """主执行流程"""
+                  previous_state = self.load_state()
+                  current_state = {}
+                  changed_urls = []
+
+                  for url in self.check_urls:
+                      if (current_hash := self.get_content_hash(url)):
+                          current_state[url] = current_hash
+                          if previous_state.get(url) != current_hash:
+                              changed_urls.append(url)
+                      time.sleep(1)  # 基础请求间隔
+
+                  if changed_urls:
+                      print(f"检测到 {len(changed_urls)} 项更新")
+                      for url in changed_urls:
+                        desc = self.url_descriptions.get(url, "未知更新")
+                        print(f"⭐ {desc}: {url}")
+                      self.send_notifications(changed_urls)
+                      self.save_state(current_state)
+                  else:
+                      print("未检测到变化")
 
           if __name__ == "__main__":
-              monitor = AsyncMonitor()
-              asyncio.run(monitor.run())
+              Monitor().run()
           EOF
 
       - name: Commit and push state file
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet url_state.json; then
-            echo "No changes detected."
+          if git diff --quiet url_state2.json; then
+            echo "No changes detected in url_state2.json."
           else
-            git add url_state.json
-            git commit -m "Update URL states [skip ci]"
-            git push
+            echo "Changes detected in url_state2.json, preparing to commit..."
+            git add url_state2.json
+            git commit -m "Update URL states [skip ci]" || echo "No changes to commit."
+            git push origin HEAD || echo "Push failed, please check permissions or network issues."
+            echo "状态文件已更新并提交"
           fi
