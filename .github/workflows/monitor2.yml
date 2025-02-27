@@ -95,7 +95,7 @@ jobs:
                       retry_options=retry
                   )
 
-              async def clean_content(self, html: str) -> str:
+              def clean_content(self, html: str) -> str:
                   """清理并提取主要内容 <button class="citation-flag" data-index="5">"""
                   soup = BeautifulSoup(html, 'lxml')  # 使用lxml加速解析
         
@@ -121,7 +121,7 @@ jobs:
                           async with self.session.get(url) as response:
                               response.raise_for_status()
                               html = await response.text()
-                              cleaned = self.clean_content(html)
+                              cleaned = await self.clean_content(html)
                               return hashlib.sha256(cleaned.encode()).hexdigest()
                   except Exception as e:
                       print(f"[ERROR] 检查 {url} 失败: {str(e)}")
