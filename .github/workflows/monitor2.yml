@@ -81,24 +81,18 @@ jobs:
 
           class Monitor:
               def __init__(self):
-                  self.session = self.create_session()
-                  self.url_descriptions: Dict[str, str] = json.loads(os.getenv("URL_DESCRIPTIONS", "{}"))
-                  self.check_urls: List[str] = [u.strip() for u in os.getenv("CHECK_URLS", "").splitlines() if u.strip()]
-
-              def create_session(self) -> aiohttp.ClientSession:
-                  """创建带重试机制的异步会话 <button class="citation-flag" data-index="1"><button class="citation-flag" data-index="8">"""
-                  retry_options = ExponentialRetry(
-                      attempts=5,
-                      start_timeout=1,
-                      factor=2,
-                      statuses={429, 500, 502, 503, 504},
-                  )
+                  self.session = None  # 延迟初始化
+                  self.url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS", "{}"))
+                  self.check_urls = [u.strip() for u in os.getenv("CHECK_URLS", "").splitlines()]
+              
+              async def create_session(self):
+                  retry = ExponentialRetry(attempts=5, factor=2, statuses={429, 500, 502, 503, 504})
                   return RetryClient(
                       client_session=aiohttp.ClientSession(
-                          headers={'User-Agent': USER_AGENT},
+                          headers={'User-Agent': "Mozilla/5.0"},
                           timeout=aiohttp.ClientTimeout(total=15)
                       ),
-                      retry_options=retry_options
+                      retry_options=retry
                   )
 
               async def clean_content(self, html: str) -> str:
@@ -118,19 +112,17 @@ jobs:
         
                   return (main_content or soup).get_text('\n', strip=True)
 
-              async def get_content_hash(self, url: str) -> Optional[str]:
-                  """流式哈希计算减少内存占用 <button class="citation-flag" data-index="7">"""
+              async def get_content_hash(self, url):
+                  if not self.session:
+                      self.session = await self.create_session()
+        
                   try:
-                      async with self.session.get(url) as response:
-                          response.raise_for_status()
-                
-                          hasher = hashlib.sha256()
-                          async for chunk in response.content.iter_any():
-                              hasher.update(chunk)
-                
-                          html = await response.text()
-                          cleaned_text = await self.clean_content(html)
-                          return hasher.hexdigest()
+                      async with asyncio.timeout(10):  # 超时管理 <button class="citation-flag" data-index="9">
+                          async with self.session.get(url) as response:
+                              response.raise_for_status()
+                              html = await response.text()
+                              cleaned = self.clean_content(html)
+                              return hashlib.sha256(cleaned.encode()).hexdigest()
                   except Exception as e:
                       print(f"[ERROR] 检查 {url} 失败: {str(e)}")
                       return None
