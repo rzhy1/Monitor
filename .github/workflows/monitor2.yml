@@ -65,7 +65,7 @@ jobs:
           import hashlib
           import asyncio
           import aiohttp
-		  from aiohttp_retry import RetryClient, ExponentialRetry
+	  from aiohttp_retry import RetryClient, ExponentialRetry
           from bs4 import BeautifulSoup
           from typing import Dict, List, Optional
 
