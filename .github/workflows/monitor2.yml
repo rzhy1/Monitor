@@ -53,7 +53,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install aiohttp==3.9.1 beautifulsoup4==4.12.3 lxml==4.9.3 requests==2.31.0
+          pip install aiohttp==3.9.1 aiohttp-retry==2.8.3 beautifulsoup4==4.12.3 lxml==4.9.3 requests==2.31.0
 
       - name: Run URL monitor
         env:
