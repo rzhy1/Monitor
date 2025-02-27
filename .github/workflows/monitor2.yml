@@ -65,6 +65,7 @@ jobs:
           import hashlib
           import asyncio
           import aiohttp
+		  from aiohttp_retry import RetryClient, ExponentialRetry
           from bs4 import BeautifulSoup
           from typing import Dict, List, Optional
 
@@ -86,17 +87,18 @@ jobs:
 
               def create_session(self) -> aiohttp.ClientSession:
                   """创建带重试机制的异步会话 <button class="citation-flag" data-index="1"><button class="citation-flag" data-index="8">"""
-                  retry_options = aiohttp.ClientRetry(
-                      total=5,
-                      backoff_factor=2,
-                      status_forcelist={429, 500, 502, 503, 504},
-                      allowed_methods={'GET'}
+                  retry_options = ExponentialRetry(
+                      attempts=5,
+                      start_timeout=1,
+                      factor=2,
+                      statuses={429, 500, 502, 503, 504},
                   )
-                  timeout = aiohttp.ClientTimeout(total=15)
-                  return aiohttp.ClientSession(
-                      headers={'User-Agent': USER_AGENT},
-                      retry_options=retry_options,
-                      timeout=timeout
+                  return RetryClient(
+                      client_session=aiohttp.ClientSession(
+                          headers={'User-Agent': USER_AGENT},
+                          timeout=aiohttp.ClientTimeout(total=15)
+                      ),
+                      retry_options=retry_options
                   )
 
               async def clean_content(self, html: str) -> str:
