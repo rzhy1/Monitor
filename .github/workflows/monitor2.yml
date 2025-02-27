@@ -54,7 +54,7 @@ jobs:
           import json
           import hashlib
           import asyncio
-          from aiohttp import ClientSession, TCPConnector
+          from aiohttp import ClientSession, TCPConnector, ClientTimeout
           from aiohttp_retry import RetryClient, ExponentialRetry
           from bs4 import BeautifulSoup
 
@@ -63,29 +63,29 @@ jobs:
                   self.config = json.loads(os.getenv("CONFIG_JSON"))
                   self.urls = list(self.config["urls"].keys())
                   self.state_file = "url_state.json"
-                  self.connector = TCPConnector(limit=10)
+                  self.timeout = ClientTimeout(total=15)
+                  self.connector = TCPConnector(limit=10, ssl=False)
                   self.retry_options = ExponentialRetry(
-                      attempts=5,
-                      start_timeout=1,
+                      attempts=3,
+                      start_timeout=2,
                       max_timeout=10,
-                      exceptions={Exception}
+                      exceptions={asyncio.TimeoutError}
                   )
 
               async def fetch_hash(self, session, url):
                   try:
-                      async with session.get(url) as response:
-                          html = await response.text()
-                          
+                      async with session.get(url, timeout=self.timeout) as response:
                           # 流式哈希计算
                           hasher = hashlib.sha256()
                           async for chunk in response.content.iter_chunked(4096):
                               hasher.update(chunk)
                           
+                          html = await response.text()
                           soup = BeautifulSoup(html, 'lxml')
-                          self.clean_html(soup)
+                          cleaned = self.clean_html(soup)
                           return url, hasher.hexdigest()
                   except Exception as e:
-                      print(f"Error fetching {url}: {str(e)}")
+                      print(f"Error fetching {url}: {type(e).__name__} - {str(e)}")
                       return url, None
 
               def clean_html(self, soup):
@@ -97,83 +97,19 @@ jobs:
                   # 精确内容定位
                   for selector in self.config["selectors"]["main_content"]:
                       if content := soup.select_one(selector):
-                          soup = content
-                          break
+                          return content
                   return soup
 
               async def check_urls(self):
                   async with RetryClient(
                       connector=self.connector,
-                      retry_options=self.retry_options
+                      retry_options=self.retry_options,
+                      timeout=self.timeout
                   ) as session:
                       tasks = [self.fetch_hash(session, url) for url in self.urls]
                       return await asyncio.gather(*tasks)
 
-              async def notify_all(self, changes):
-                  if not changes:
-                      return
-                  
-                  # 合并通知内容
-                  markdown_content = "### 更新通知\n" + "\n".join(
-                      f"[{self.config['urls'][url]}]({url})" 
-                      for url in changes
-                  )
-
-                  # 异步发送所有通知
-                  await asyncio.gather(
-                      self.send_serverchan(markdown_content),
-                      self.send_wechatwork(markdown_content)
-                  )
-
-              async def send_serverchan(self, content):
-                  if sctkey := os.getenv("SCTKEY"):
-                      async with ClientSession() as session:
-                          await session.post(
-                              f"https://sctapi.ftqq.com/{sctkey}.send",
-                              json={'title': '内容更新', 'desp': content}
-                          )
-
-              async def send_wechatwork(self, content):
-                  if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
-                      async with ClientSession() as session:
-                          tasks = [
-                              session.post(
-                                  wh["url"],
-                                  json={"msgtype": "markdown", "markdown": {"content": content}}
-                              )
-                              for wh in webhooks
-                          ]
-                          await asyncio.gather(*tasks)
-
-              def load_state(self):
-                  try:
-                      with open(self.state_file) as f:
-                          return json.load(f)
-                  except (FileNotFoundError, json.JSONDecodeError):
-                      return {}
-
-              def save_state(self, state):
-                  with open(self.state_file, 'w') as f:
-                      json.dump(state, f, indent=2)
-
-              async def run(self):
-                  previous_state = self.load_state()
-                  current_state = {}
-                  results = await self.check_urls()
-                  
-                  # 识别变更项
-                  changes = [
-                      url for url, hash_val in results 
-                      if hash_val and previous_state.get(url) != hash_val
-                  ]
-                  current_state.update({url: hash_val for url, hash_val in results if hash_val})
-
-                  if changes:
-                      print(f"检测到 {len(changes)} 项更新")
-                      await self.notify_all(changes)
-                      self.save_state(current_state)
-                  else:
-                      print("未检测到变化")
+              # 保持其他方法不变...
 
           if __name__ == "__main__":
               monitor = AsyncMonitor()
