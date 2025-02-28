@@ -72,7 +72,7 @@ jobs:
 
           # 常量配置
           USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-          STATE_FILE = "url_state2.json"
+          STATE_FILE = "url_state.json"
           CLEAN_TAGS = ['script', 'style', 'nav', 'footer', 'aside', 'header']
           CONTENT_SELECTORS = [
               ('div', {'class': 'menu menu_time'}),
@@ -236,11 +236,11 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet url_state2.json; then
-            echo "No changes detected in url_state2.json."
+          if git diff --quiet url_state.json; then
+            echo "No changes detected in url_state.json."
           else
-            echo "Changes detected in url_state2.json, preparing to commit..."
-            git add url_state2.json
+            echo "Changes detected in url_state.json, preparing to commit..."
+            git add url_state.json
             git commit -m "Update URL states [skip ci]" || echo "No changes to commit."
             git push origin HEAD || echo "Push failed, please check permissions or network issues."
             echo "状态文件已更新并提交"
