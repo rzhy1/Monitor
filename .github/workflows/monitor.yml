@@ -77,7 +77,10 @@ jobs:
           CONTENT_SELECTORS = [
               ('div', {'class': 'menu menu_time'}),
               ('div', {'id': 'main-content'}),
-              ('section', {'role': 'main'})
+              ('section', {'role': 'main'}),
+              ('article', {}),      # 新增通用文章区域
+              ('main', {}),         # 新增主内容区
+              ('div', {'class': 'content'})  # 新增通用内容div
           ]
 
           class Monitor:
