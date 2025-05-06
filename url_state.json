@@ -1,12 +1,13 @@
 {
-  "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "d81ed855433d1dab6a9c525f0bff11df38369d6fe3b5afd91a1e5f3af5398d13",
+  "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "29fb4ece0d62201d03528aaede6aa51fc7f164af650fe042adac476c77cd6a38",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "c9db0d23b4b19d946c224f6af3801612eeb4c3e0ff52af2510646e18acbd52d7",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "348b34544730e272ad90964223bcdbd820608a344d8ae675bea7a785a6882a3d",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "c9db0d23b4b19d946c224f6af3801612eeb4c3e0ff52af2510646e18acbd52d7",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "2abce2a54832fe72429ea20b927ff289fd19bbe59e94b1d7a3edb4c1bf001b92",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "a8707cf18315c88d57e2ced21e0995ff58e3abccb3651e323b1c8430863568c1",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "65d922b81cac5f6b219d92191081942dd296d12e75780a123194fbf6e1b259e3",
-  "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxjhfb": "baf5c4f2d6c046f126462759863c500b593829c1f5fba0b84cd48faca460229b",
+  "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxjhfb": "42d6ff0105551f0c3f613731c9697a6df7aacae6eb86423bb436a0f0c59fe5d6",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "6a2b7ebb9249dc457db3ae90a0250c3265e9c14185934350323cf3415ac38057",
-  "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "945c77e826367d9306ea0c07b2a53462db053e938c334d2b96259f581a25e8e5"
+  "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "4c3b686a5434d1e0efe5eabf71ebf355aa49bd53ed6bf2640d0ab19d4a360fab",
+  "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "163172c1d6b585fa85f2eba58dd4da7898a8a503603281cfb54b6f9a23015fa3"
 }
