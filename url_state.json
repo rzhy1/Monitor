@@ -1,5 +1,4 @@
 {
-  "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "46e74b75f97a94dc3373dc9aa95bbe95ee77462834afbbdcc8d7b4d867631d79",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "ede1fe731c65c8a7e46a61f7afdac286511e220d90a3f3950e3a76c0554ec546",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "348b34544730e272ad90964223bcdbd820608a344d8ae675bea7a785a6882a3d",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "2d0ec20be38c75abc4c44bc98cf6867dc4632d0d9c833f32b7a812ac2fcc2c49",
@@ -7,7 +6,7 @@
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "6caf9f7a9fb6eb28a7fdfa0ebcf1777e802bcc3c5e9d20f5dd891fe1448439bf",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "3b49c23ba0815adc1a68f08093ccf0a1d9429f8457b6304436e222052e860743",
   "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxjhfb": "b446c63b45d7ac81ffa917b1b2eb0464826a06bee75553c8bc3bc7d112ea785e",
-  "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "c9216de0da8a67748a38ba89822df9a66712f9ac04aa67c73d9e783fd8bd2ee2",
-  "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "f3d9362d4ceac95c190a0e74bd67d61a0e5c6eb4f031286c139b3d2f963dcadb",
+  "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxygs": "69611a1e0362f62d180e16b49a5d0d5056db625bb17e82d4eb8dd7b875fbf6ec",
+  "https://ztb.cxjw.hangzhou.gov.cn:8092/jyxxwj": "fda145da53b9ecfadb7ac768d7621e1f0873b794c165a7397f630e49fafb9404",
   "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "163172c1d6b585fa85f2eba58dd4da7898a8a503603281cfb54b6f9a23015fa3"
 }
