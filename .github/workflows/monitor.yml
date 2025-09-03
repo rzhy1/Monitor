@@ -157,35 +157,16 @@ jobs:
                       print(f"[ERROR] 保存状态失败: {str(e)}")
 
               def send_notifications(self, changed_urls):
-                  """发送双重通知"""
+                  """发送通知"""
                   # 准备消息内容
-                  plain_msg = []
                   markdown_msg = []
                   for url in changed_urls:
                       desc = self.url_descriptions.get(url, "未知更新")
-                      plain_msg.append(f"{desc}: {url}")
                       markdown_msg.append(f"[{desc}]({url})")
-
-                  # Server酱通知
-                  if sctkey := os.getenv("SCTKEY"):
-                      self._send_serverchan("\n\n".join(plain_msg))
 
                   # 企业微信通知
                   if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
                       self._send_wechatwork(markdown_msg, webhooks)
-
-              def _send_serverchan(self, content):
-                  """发送Server酱通知"""
-                  try:
-                      resp = requests.post(
-                          f"https://sctapi.ftqq.com/{os.getenv('SCTKEY')}.send",
-                          json={'title': '内容更新', 'desp': content[:2000]},
-                          timeout=15
-                      )
-                      resp.raise_for_status()
-                      print("Server酱通知成功")
-                  except Exception as e:
-                      print(f"[ERROR] Server酱通知失败: {str(e)}")
 
               def _send_wechatwork(self, items, webhooks):
                   """发送企业微信通知"""
