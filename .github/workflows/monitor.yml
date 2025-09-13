@@ -116,6 +116,21 @@ jobs:
                       if main_content: break
                   return main_content or soup
 
+              def extract_project_titles(self, html):
+                  """提取项目标题"""
+                  soup = BeautifulSoup(html, 'html.parser')
+                  titles = []
+                  
+                  # 查找所有包含项目标题的div
+                  for div in soup.find_all('div', class_='menu menu_time'):
+                      h3 = div.find('h3')
+                      if h3:
+                          # 提取纯文本内容，去除HTML标签
+                          title_text = h3.get_text(strip=True)
+                          titles.append(title_text)
+                  
+                  return titles
+
               def get_content_hash(self, url):
                   """获取内容哈希值"""
                   try:
@@ -128,10 +143,10 @@ jobs:
                       
                       cleaned = self.clean_content(response.text)
                       text = cleaned.get_text('\n', strip=True)
-                      return hashlib.sha256(text.encode()).hexdigest()
+                      return hashlib.sha256(text.encode()).hexdigest(), response.text
                   except Exception as e:
                       print(f"[ERROR] 检查 {url} 失败: {str(e)}")
-                      return None
+                      return None, None
 
               def load_state(self):
                   """加载历史状态"""
@@ -149,13 +164,19 @@ jobs:
                   except IOError as e:
                       print(f"[ERROR] 保存状态失败: {str(e)}")
 
-              def send_notifications(self, changed_urls):
+              def send_notifications(self, changed_urls, url_titles_map):
                   """发送通知"""
                   # 准备消息内容
                   markdown_msg = []
                   for url in changed_urls:
                       desc = self.url_descriptions.get(url, "未知更新")
-                      markdown_msg.append(f"[{desc}]({url})")
+                      titles = url_titles_map.get(url, [])
+                      
+                      if titles:
+                          title_list = "\n".join([f"• {title}" for title in titles])
+                          markdown_msg.append(f"**{desc}**\n{title_list}\n[查看详情]({url})")
+                      else:
+                          markdown_msg.append(f"**{desc}**\n[查看详情]({url})")
 
                   # 企业微信通知
                   if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
@@ -170,7 +191,7 @@ jobs:
                               json={
                                   "msgtype": "markdown",
                                   "markdown": {
-                                      "content": "### 更新通知\n" + "\n".join(items)
+                                      "content": "### 更新通知\n" + "\n\n".join(items)
                                   }
                               },
                               timeout=15
@@ -187,10 +208,19 @@ jobs:
                   previous_state = self.load_state()
                   current_state = {}
                   changed_urls = []
+                  url_titles_map = {}  # 存储每个URL对应的项目标题
 
                   for url in self.check_urls:
-                      if (current_hash := self.get_content_hash(url)):
+                      result = self.get_content_hash(url)
+                      if result[0] is not None:
+                          current_hash, html_content = result
                           current_state[url] = current_hash
+                          
+                          # 提取项目标题
+                          titles = self.extract_project_titles(html_content)
+                          if titles:
+                              url_titles_map[url] = titles
+                          
                           if previous_state.get(url) != current_hash:
                               changed_urls.append(url)
                       time.sleep(1)  # 基础请求间隔
@@ -198,9 +228,14 @@ jobs:
                   if changed_urls:
                       print(f"检测到 {len(changed_urls)} 项更新")
                       for url in changed_urls:
-                        desc = self.url_descriptions.get(url, "未知更新")
-                        print(f"⭐ {desc}: {url}")
-                      self.send_notifications(changed_urls)
+                          desc = self.url_descriptions.get(url, "未知更新")
+                          titles = url_titles_map.get(url, [])
+                          print(f"⭐ {desc}: {url}")
+                          if titles:
+                              for title in titles:
+                                  print(f"  项目标题: {title}")
+                      
+                      self.send_notifications(changed_urls, url_titles_map)
                       self.save_state(current_state)
                   else:
                       print("未检测到变化")
