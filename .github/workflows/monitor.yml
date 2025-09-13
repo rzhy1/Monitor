@@ -202,9 +202,9 @@ jobs:
                           for title, link in titles_with_links:
                               title_links.append(f"[{title}]({link})")
                           
-                          title_list = "\n".join([f"• {link}" for link in title_links])
+                          title_list = "\n".join([f"🔴 {link}" for link in title_links])
                           # 保留查看详情链接，指向原监控页面
-                          markdown_msg.append(f"**{desc}**\n{title_list}\n[查看详情]({url})")
+                          markdown_msg.append(f"**{desc}**\n{title_list}\n[🔵查看详情]({url})")
                       else:
                           markdown_msg.append(f"**{desc}**\n[查看详情]({url})")
 
