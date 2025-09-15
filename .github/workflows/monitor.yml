@@ -27,14 +27,14 @@ jobs:
         https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml
       URL_DESCRIPTIONS: |
         {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E8%BD%A6%E8%BE%86%E6%AE%B5&status=5&channelId=2331": "车辆段",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "杭州地铁特别提醒项目",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果",
-         "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "测试专用"}
+        "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
+        "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
+        "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "杭州地铁特别提醒项目",
+        "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
+        "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
+        "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
+        "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果",
+        "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "测试专用"}
 
     steps:
       - name: Checkout repository
@@ -207,7 +207,8 @@ jobs:
               def send_notifications(self, changed_urls, new_titles_map):
                   """发送通知"""
                   # 准备消息内容
-                  markdown_msg = []
+                  markdown_msgs = []  # 改为列表，存储多条消息
+                  
                   for url in changed_urls:
                       desc = self.url_descriptions.get(url, "未知更新")
                       new_titles = new_titles_map.get(url, [])
@@ -220,36 +221,84 @@ jobs:
                           
                           # 将项目列表的标记改为红色圆点
                           title_list = "\n".join([f"🔴 {link}" for link in title_links])
-                          # 保留查看详情链接，指向原监控页面，并添加蓝色圆点
-                          markdown_msg.append(f"**{desc}**\n{title_list}\n[🔵查看详情]({url})")
+                          
+                          # 构建单条消息
+                          message = f"**{desc}**\n{title_list}\n[🔵查看详情]({url})"
+                          
+                          # 检查消息长度
+                          if len(message) > 4000:  # 留出一些空间给消息头
+                              # 如果消息过长，分割成多条
+                              parts = self.split_long_message(message)
+                              markdown_msgs.extend(parts)
+                          else:
+                              markdown_msgs.append(message)
                       else:
                           # 页面内容有变化但没有新增项目
-                          markdown_msg.append(f"**{desc}**\n页面内容有变化，但没有检测到新增项目\n[🔵查看详情]({url})")
+                          message = f"**{desc}**\n页面内容有变化，但没有检测到新增项目\n[🔵查看详情]({url})"
+                          markdown_msgs.append(message)
                   
                   # 企业微信通知
                   if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
-                      self._send_wechatwork(markdown_msg, webhooks)
+                      self._send_wechatwork(markdown_msgs, webhooks)
+
+              def split_long_message(self, message, max_length=4000):
+                  """分割过长的消息"""
+                  parts = []
+                  while len(message) > max_length:
+                      # 找到最后一个换行符位置，尽量在完整行处分割
+                      split_pos = message.rfind('\n', 0, max_length)
+                      if split_pos == -1:
+                          # 如果没有找到换行符，就在最大长度处分割
+                          split_pos = max_length
+                      
+                      parts.append(message[:split_pos])
+                      message = message[split_pos:]
+                  
+                  if message:
+                      parts.append(message)
+                  
+                  return parts
 
               def _send_wechatwork(self, items, webhooks):
                   """发送企业微信通知"""
                   for webhook in webhooks:
                       try:
-                          resp = self.session.post(
-                              webhook['url'],
-                              json={
+                          print(f"准备发送 {len(items)} 条消息到 {webhook.get('note', '未知webhook')}")
+                          
+                          # 逐条发送消息，避免一次性发送过多
+                          for i, item in enumerate(items):
+                              print(f"发送第 {i+1}/{len(items)} 条消息")
+                              
+                              data = {
                                   "msgtype": "markdown",
                                   "markdown": {
-                                      "content": "### 更新通知\n" + "\n\n".join(items)
+                                      "content": item
                                   }
-                              },
-                              timeout=15
-                          )
-                          if resp.status_code == 200:
-                              print(f"企业微信通知成功: {webhook.get('note')}")
-                          else:
-                              print(f"[ERROR] 企业微信通知失败: {resp.status_code}")
+                              }
+                              
+                              resp = self.session.post(
+                                  webhook['url'],
+                                  json=data,
+                                  timeout=15
+                              )
+                              
+                              print(f"响应状态码: {resp.status_code}")
+                              if resp.status_code == 200:
+                                  result = resp.json()
+                                  if result.get('errcode') == 0:
+                                      print(f"✅ 第 {i+1} 条消息发送成功")
+                                  else:
+                                      print(f"❌ 第 {i+1} 条消息发送失败: {result.get('errmsg')}")
+                              else:
+                                  print(f"❌ 第 {i+1} 条消息发送失败: {resp.status_code}")
+                              
+                              # 添加短暂延迟，避免频率限制
+                              time.sleep(1)
+                              
                       except Exception as e:
                           print(f"[ERROR] 企业微信通知异常: {str(e)}")
+                          import traceback
+                          traceback.print_exc()
 
               def run(self):
                   """主执行流程"""
