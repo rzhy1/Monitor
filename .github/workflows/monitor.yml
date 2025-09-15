@@ -94,8 +94,8 @@ jobs:
                       allowed_methods=['GET']
                   )
                   adapter = HTTPAdapter(max_retries=retry)
-                  session.mount('https://', adapter)
-                  session.mount('http://', adapter)
+                  session.mount('https', adapter)
+                  session.mount('http', adapter)
                   return session
 
               def clean_content(self, html):
@@ -174,9 +174,18 @@ jobs:
                   """加载历史状态"""
                   try:
                       with open(STATE_FILE, 'r') as f:
-                          return json.load(f)
+                          state = json.load(f)
                   except (FileNotFoundError, json.JSONDecodeError):
-                      return {}
+                      state = {}
+                  
+                  # 确保状态文件有正确的结构
+                  for url in self.check_urls:
+                      if url not in state:
+                          state[url] = {"hash": None, "titles": []}
+                      elif isinstance(state[url], str):  # 兼容旧版本的状态文件
+                          state[url] = {"hash": state[url], "titles": []}
+                  
+                  return state
 
               def save_state(self, state):
                   """保存当前状态"""
@@ -186,26 +195,35 @@ jobs:
                   except IOError as e:
                       print(f"[ERROR] 保存状态失败: {str(e)}")
 
-              def send_notifications(self, changed_urls, url_titles_map):
+              def get_new_titles(self, current_titles, previous_titles):
+                  """找出新增的标题"""
+                  # 将之前的标题转换为集合以便快速查找
+                  previous_set = set(previous_titles)
+                  # 找出当前标题中不在之前标题集合中的项目
+                  return [title for title in current_titles if title[0] not in previous_set]
+
+              def send_notifications(self, changed_urls, new_titles_map):
                   """发送通知"""
                   # 准备消息内容
                   markdown_msg = []
                   for url in changed_urls:
                       desc = self.url_descriptions.get(url, "未知更新")
-                      titles_with_links = url_titles_map.get(url, [])
+                      new_titles = new_titles_map.get(url, [])
                       
-                      if titles_with_links:
-                          # 为每个标题创建带链接的格式
+                      if new_titles:
+                          # 为每个新增标题创建带链接的格式
                           title_links = []
-                          for title, link in titles_with_links:
+                          for title, link in new_titles:
                               title_links.append(f"[{title}]({link})")
                           
+                          # 将项目列表的标记改为红色圆点
                           title_list = "\n".join([f"🔴 {link}" for link in title_links])
-                          # 保留查看详情链接，指向原监控页面
+                          # 保留查看详情链接，指向原监控页面，并添加蓝色圆点
                           markdown_msg.append(f"**{desc}**\n{title_list}\n[🔵查看详情]({url})")
                       else:
-                          markdown_msg.append(f"**{desc}**\n[查看详情]({url})")
-
+                          # 页面内容有变化但没有新增项目
+                          markdown_msg.append(f"**{desc}**\n页面内容有变化，但没有检测到新增项目\n[🔵查看详情]({url})")
+                  
                   # 企业微信通知
                   if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
                       self._send_wechatwork(markdown_msg, webhooks)
@@ -236,34 +254,47 @@ jobs:
                   previous_state = self.load_state()
                   current_state = {}
                   changed_urls = []
-                  url_titles_map = {}  # 存储每个URL对应的项目标题和链接
+                  new_titles_map = {}  # 存储每个URL对应的新增项目标题和链接
 
                   for url in self.check_urls:
                       result = self.get_content_hash(url)
                       if result[0] is not None:
                           current_hash, html_content = result
-                          current_state[url] = current_hash
+                          # 提取当前所有标题
+                          current_titles = self.extract_project_titles(html_content, url)
                           
-                          # 提取项目标题和链接
-                          titles_with_links = self.extract_project_titles(html_content, url)
-                          if titles_with_links:
-                              url_titles_map[url] = titles_with_links
+                          # 获取之前的标题
+                          previous_titles = previous_state.get(url, {}).get("titles", [])
                           
-                          if previous_state.get(url) != current_hash:
+                          # 找出新增的标题
+                          new_titles = self.get_new_titles(current_titles, previous_titles)
+                          
+                          # 准备当前状态存储
+                          current_state[url] = {
+                              "hash": current_hash,
+                              "titles": [title[0] for title in current_titles]  # 只存储标题文本，不存储链接
+                          }
+                          
+                          # 如果有新增标题或哈希值变化
+                          if new_titles or previous_state.get(url, {}).get("hash") != current_hash:
                               changed_urls.append(url)
+                              new_titles_map[url] = new_titles
+                          
                       time.sleep(1)  # 基础请求间隔
 
                   if changed_urls:
                       print(f"检测到 {len(changed_urls)} 项更新")
                       for url in changed_urls:
                           desc = self.url_descriptions.get(url, "未知更新")
-                          titles_with_links = url_titles_map.get(url, [])
+                          new_titles = new_titles_map.get(url, [])
                           print(f"⭐ {desc}: {url}")
-                          if titles_with_links:
-                              for title, link in titles_with_links:
-                                  print(f"  项目标题: {title} -> {link}")
+                          if new_titles:
+                              for title, link in new_titles:
+                                  print(f"  新增项目: {title} -> {link}")
+                          else:
+                              print("  页面内容有变化，但没有检测到新增项目")
                       
-                      self.send_notifications(changed_urls, url_titles_map)
+                      self.send_notifications(changed_urls, new_titles_map)
                       self.save_state(current_state)
                   else:
                       print("未检测到变化")
