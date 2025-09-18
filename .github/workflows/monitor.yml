@@ -152,7 +152,7 @@ jobs:
                   return titles_with_links
 
               def get_content_hash(self, url):
-                  """获取内容哈希值 - 专注于项目内容本身"""
+                  """获取内容哈希值 - 专注于项目内容本身，忽略顺序"""
                   try:
                       response = self.session.get(
                           url,
@@ -164,10 +164,13 @@ jobs:
                       # 提取所有项目标题和链接，基于这些内容计算哈希
                       titles_with_links = self.extract_project_titles(response.text, url)
                       
-                      # 只使用项目标题和链接来计算哈希，忽略其他页面变化
-                      content_for_hash = "\n".join([f"{title}|{link}" for title, link in titles_with_links])
+                      # 对项目标题进行排序，确保顺序不影响哈希值
+                      sorted_titles = sorted([title for title, link in titles_with_links])
                       
-                      print(f"使用项目内容计算哈希，内容长度: {len(content_for_hash)}")
+                      # 只使用排序后的项目标题来计算哈希，忽略链接和顺序
+                      content_for_hash = "\n".join(sorted_titles)
+                      
+                      print(f"使用排序后的项目标题计算哈希，内容长度: {len(content_for_hash)}")
                       return hashlib.sha256(content_for_hash.encode()).hexdigest(), response.text
                       
                   except Exception as e:
