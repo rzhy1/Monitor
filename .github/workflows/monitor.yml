@@ -14,7 +14,7 @@ jobs:
   check_url_changes:
     runs-on: ubuntu-latest
     env:
-      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }}
+      WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS || '[]' }}
       CHECK_URLS: |
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332
@@ -68,6 +68,14 @@ jobs:
           USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
           STATE_FILE = "url_state.json"
           CLEAN_TAGS = ['script', 'style', 'nav', 'footer', 'aside', 'header']
+          CONTENT_SELECTORS = [
+              ('div', {'class': 'menu menu_time'}),
+              ('div', {'id': 'main-content'}),
+              ('section', {'role': 'main'}),
+              ('article', {}),      # 新增通用文章区域
+              ('main', {}),         # 新增主内容区
+              ('div', {'class': 'content'})  # 新增通用内容div
+          ]
 
           class Monitor:
               def __init__(self):
@@ -90,70 +98,63 @@ jobs:
                   session.mount('http', adapter)
                   return session
 
+              def clean_content(self, html):
+                  """清理HTML内容"""
+                  soup = BeautifulSoup(html, 'html.parser')
+                  
+                  # 移除干扰元素
+                  for tag in CLEAN_TAGS:
+                      for element in soup.find_all(tag):
+                          element.decompose()
+                  
+                  # 移除注释
+                  for comment in soup.find_all(string=lambda t: isinstance(t, Comment)):
+                      comment.extract()
+
+                  # 定位主要内容
+                  main_content = None
+                  for selector in CONTENT_SELECTORS:
+                      main_content = soup.find(*selector)
+                      if main_content: break
+                  return main_content or soup
+
               def extract_project_titles(self, html, current_url):
-                  """提取项目标题和链接 - 使用更灵活的选择器"""
+                  """提取项目标题和链接"""
                   soup = BeautifulSoup(html, 'html.parser')
                   titles_with_links = []
                   
-                  # 尝试多种可能的选择器
-                  selectors = [
-                      'div.menu.menu_time',
-                      'div.list > div',  # 直接获取列表下的div
-                      '.listWrap .list > div'  # 更具体的选择器
-                  ]
-                  
-                  menu_divs = []
-                  for selector in selectors:
-                      menu_divs = soup.select(selector)
-                      if menu_divs:
-                          print(f"使用选择器 '{selector}' 找到了 {len(menu_divs)} 个元素")
-                          break
-                  
-                  if not menu_divs:
-                      print("警告: 未找到任何项目元素，尝试备用选择器")
-                      # 备用方案: 查找包含onclick的div
-                      menu_divs = soup.find_all('div', onclick=lambda x: x and 'window.open' in x)
-                      print(f"备用选择器找到了 {len(menu_divs)} 个元素")
-                  
-                  print(f"总共找到 {len(menu_divs)} 个可能的项目元素")
-                  
-                  for i, div in enumerate(menu_divs):
-                      # 优先查找h3，如果没有则查找其他可能包含标题的标签
-                      title_element = div.find('h3') or div.find('a') or div
-                      title_text = title_element.get_text(strip=True)
-                      
-                      # 过滤掉空标题或非项目标题
-                      if not title_text or len(title_text) < 5:
-                          continue
+                  # 查找所有包含项目标题的div
+                  for div in soup.find_all('div', class_='menu menu_time'):
+                      h3 = div.find('h3')
+                      if h3:
+                          # 提取纯文本内容，去除HTML标签
+                          title_text = h3.get_text(strip=True)
                           
-                      print(f"项目 {i+1}: {title_text}")
-                      
-                      # 尝试从onclick属性中提取链接
-                      onclick = div.get('onclick', '')
-                      detail_url = None
-                      
-                      if onclick and 'window.open' in onclick:
-                          # 使用正则表达式提取URL
-                          match = re.search(r"window\.open\s*\(\s*['\"]([^'\"]+)['\"]", onclick)
-                          if match:
-                              detail_path = match.group(1)
-                              # 构建完整URL
-                              if detail_path.startswith('/'):
-                                  detail_url = f"{self.base_url}{detail_path}"
-                              else:
-                                  detail_url = detail_path
-                      
-                      # 如果没有提取到详细链接，使用当前页面URL
-                      if not detail_url:
-                          detail_url = current_url
-                      
-                      titles_with_links.append((title_text, detail_url))
+                          # 尝试从onclick属性中提取链接
+                          onclick = div.get('onclick', '')
+                          detail_url = None
+                          
+                          if onclick and 'window.open' in onclick:
+                              # 使用正则表达式提取URL
+                              match = re.search(r"window\.open\s*\(\s*['\"]([^'\"]+)['\"]", onclick)
+                              if match:
+                                  detail_path = match.group(1)
+                                  # 构建完整URL
+                                  if detail_path.startswith('/'):
+                                      detail_url = f"{self.base_url}{detail_path}"
+                                  else:
+                                      detail_url = detail_path
+                          
+                          # 如果没有提取到详细链接，使用当前页面URL
+                          if not detail_url:
+                              detail_url = current_url
+                          
+                          titles_with_links.append((title_text, detail_url))
                   
-                  print(f"成功提取 {len(titles_with_links)} 个项目标题")
                   return titles_with_links
 
               def get_content_hash(self, url):
-                  """获取内容哈希值 - 只关注项目列表部分"""
+                  """获取内容哈希值"""
                   try:
                       response = self.session.get(
                           url,
@@ -162,29 +163,9 @@ jobs:
                       )
                       response.raise_for_status()
                       
-                      # 只提取项目列表部分计算哈希，减少其他变化的干扰
-                      soup = BeautifulSoup(response.text, 'html.parser')
-                      list_section = soup.find('div', class_='listWrap')
-                      
-                      if list_section:
-                          text = list_section.get_text('\n', strip=True)
-                          print(f"使用列表部分计算哈希，内容长度: {len(text)}")
-                          return hashlib.sha256(text.encode()).hexdigest(), response.text
-                      else:
-                          # 回退到完整内容清理
-                          print("未找到列表部分，使用完整内容计算哈希")
-                          # 移除干扰元素
-                          for tag in ['script', 'style', 'nav', 'footer', 'aside', 'header']:
-                              for element in soup.find_all(tag):
-                                  element.decompose()
-                          
-                          # 移除注释
-                          for comment in soup.find_all(string=lambda t: isinstance(t, Comment)):
-                              comment.extract()
-                              
-                          text = soup.get_text('\n', strip=True)
-                          return hashlib.sha256(text.encode()).hexdigest(), response.text
-                          
+                      cleaned = self.clean_content(response.text)
+                      text = cleaned.get_text('\n', strip=True)
+                      return hashlib.sha256(text.encode()).hexdigest(), response.text
                   except Exception as e:
                       print(f"[ERROR] 检查 {url} 失败: {str(e)}")
                       return None, None
@@ -219,10 +200,7 @@ jobs:
                   # 将之前的标题转换为集合以便快速查找
                   previous_set = set(previous_titles)
                   # 找出当前标题中不在之前标题集合中的项目
-                  new_titles = [title for title in current_titles if title[0] not in previous_set]
-                  
-                  print(f"之前有 {len(previous_set)} 个项目，当前有 {len(current_titles)} 个项目，新增 {len(new_titles)} 个项目")
-                  return new_titles
+                  return [title for title in current_titles if title[0] not in previous_set]
 
               def send_notifications(self, changed_urls, new_titles_map):
                   """发送通知"""
@@ -258,15 +236,8 @@ jobs:
                           markdown_msgs.append(message)
                   
                   # 企业微信通知
-                  webhook_urls = os.getenv("WEBHOOK_URLS")
-                  if webhook_urls:
-                      try:
-                          webhooks = json.loads(webhook_urls)
-                          self._send_wechatwork(markdown_msgs, webhooks)
-                      except json.JSONDecodeError:
-                          print("WEBHOOK_URLS 格式错误，无法解析为JSON")
-                  else:
-                      print("未设置 WEBHOOK_URLS，跳过通知发送")
+                  if webhooks := json.loads(os.getenv("WEBHOOK_URLS", "[]")):
+                      self._send_wechatwork(markdown_msgs, webhooks)
 
               def split_long_message(self, message, max_length=4000):
                   """分割过长的消息"""
@@ -335,7 +306,6 @@ jobs:
                   new_titles_map = {}  # 存储每个URL对应的新增项目标题和链接
 
                   for url in self.check_urls:
-                      print(f"\n检查 URL: {url}")
                       result = self.get_content_hash(url)
                       if result[0] is not None:
                           current_hash, html_content = result
@@ -355,18 +325,14 @@ jobs:
                           }
                           
                           # 如果有新增标题或哈希值变化
-                          previous_hash = previous_state.get(url, {}).get("hash")
-                          if new_titles or previous_hash != current_hash:
+                          if new_titles or previous_state.get(url, {}).get("hash") != current_hash:
                               changed_urls.append(url)
                               new_titles_map[url] = new_titles
-                              print(f"URL {url} 检测到变化: 新增项目={len(new_titles)}个, 哈希变化={previous_hash != current_hash}")
-                          else:
-                              print(f"URL {url} 未检测到变化")
                           
                       time.sleep(1)  # 基础请求间隔
 
                   if changed_urls:
-                      print(f"\n检测到 {len(changed_urls)} 项更新")
+                      print(f"检测到 {len(changed_urls)} 项更新")
                       for url in changed_urls:
                           desc = self.url_descriptions.get(url, "未知更新")
                           new_titles = new_titles_map.get(url, [])
@@ -380,7 +346,7 @@ jobs:
                       self.send_notifications(changed_urls, new_titles_map)
                       self.save_state(current_state)
                   else:
-                      print("未检测到任何变化")
+                      print("未检测到变化")
 
           if __name__ == "__main__":
               Monitor().run()
