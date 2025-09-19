@@ -101,17 +101,17 @@ jobs:
 
               def send_wechat_template_message(self, access_token, title, content, url_desc):
                   send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}"
-                  data = {
-                      "touser": self.wechat_to_user,
-                      "template_id": self.wechat_template_id,
-                      "url": url_desc,
-                      "data": {
-                          "first": {"value": "文章更新提醒 📢", "color": "#173177"},
-                          "keyword1": {"value": title, "color": "#173177"},
-                          "keyword2": {"value": time.strftime('%Y-%m-%d'), "color": "#173177"},
-                          "remark": {"value": f"{content}\n点击详情查看完整内容", "color": "#173177"}
-                      }
-                  }
+                 data = {
+                    "touser": self.wechat_to_user,
+                    "template_id": self.wechat_template_id,
+                    "url": url_desc,  # 点击消息跳转的 URL
+                    "data": {
+                        "title": {"value": title, "color": "#173177"},
+                        "content": {"value": content, "color": "#173177"},
+                        "url": {"value": url_desc, "color": "#173177"}
+                    }
+                 }
+
                   try:
                       r = self.session.post(send_url, json=data, timeout=15).json()
                       if r.get("errcode") == 0:
