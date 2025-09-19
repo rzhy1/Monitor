@@ -363,11 +363,11 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet url_state.json; then
-            echo "No changes detected in url_state.json."
+          if git diff --quiet url_state1.json; then
+            echo "No changes detected in url_state1.json."
           else
-            echo "Changes detected in url_state.json, preparing to commit..."
-            git add url_state.json
+            echo "Changes detected in url_state1.json, preparing to commit..."
+            git add url_state1.json
             git commit -m "Update URL states [skip ci]" || echo "No changes to commit."
             git push origin HEAD || echo "Push failed, please check permissions or network issues."
             echo "状态文件已更新并提交"
