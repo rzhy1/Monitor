@@ -165,23 +165,33 @@ jobs:
                   """发送微信模板消息 - 特别突出显示新增标题"""
                   send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}"
                   
-                  # 构建消息内容
-                  new_titles_text = "\n".join([f"🔴 {title}" for title in new_titles])
-                  all_titles_text = "\n".join([f"• {title}" for title, link in all_titles[:15]])  # 最多显示15条
-                  if len(all_titles) > 15:
-                      all_titles_text += f"\n...等{len(all_titles)}条内容"
+                  # 构建消息内容 - 简化版本，避免字段混淆
+                  new_titles_text = "\n".join([f"🔴 {title}" for title in new_titles[:8]])  # 最多显示8条新增
+                  if len(new_titles) > 8:
+                      new_titles_text += f"\n...等{len(new_titles)}条新增内容"
                   
-                  # 使用标准字段格式
+                  # 使用更简单的模板格式，避免字段顺序问题
                   data = {
                       "touser": self.wechat_to_user,
                       "template_id": self.wechat_template_id,
                       "url": url_desc,
                       "data": {
-                          "first": {"value": "🚨 发现新增内容！", "color": "#FF0000"},
-                          "keyword1": {"value": title, "color": "#173177"},
-                          "keyword2": {"value": f"新增{len(new_titles)}条", "color": "#FF0000"},
-                          "keyword3": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
-                          "remark": {"value": f"新增内容：\n{new_titles_text}\n\n所有内容：\n{all_titles_text}\n\n点击查看详情", "color": "#173177"}
+                          "first": {
+                              "value": f"🚨 {title} 发现{len(new_titles)}条新增内容！",
+                              "color": "#FF0000"
+                          },
+                          "keyword1": {
+                              "value": "\n".join([f"• {title}" for title in new_titles[:5]]),
+                              "color": "#173177"
+                          },
+                          "keyword2": {
+                              "value": time.strftime('%Y-%m-%d %H:%M:%S'),
+                              "color": "#173177"
+                          },
+                          "remark": {
+                              "value": f"共发现{len(new_titles)}条新增内容\n点击查看详情 →",
+                              "color": "#173177"
+                          }
                       }
                   }
                   
@@ -193,16 +203,28 @@ jobs:
                       else:
                           print(f"❌ 微信消息发送失败: {r.get('errmsg')}")
                           
-                          # 备用方案：使用通用字段格式
+                          # 备用方案：使用更通用的字段名
                           data_alt = {
                               "touser": self.wechat_to_user,
                               "template_id": self.wechat_template_id,
                               "url": url_desc,
                               "data": {
-                                  "title": {"value": f"🚨 {title} - 新增{len(new_titles)}条", "color": "#FF0000"},
-                                  "time": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
-                                  "content": {"value": f"新增内容：\n{new_titles_text}\n\n所有内容：\n{all_titles_text}", "color": "#173177"},
-                                  "remark": {"value": "点击查看详情", "color": "#173177"}
+                                  "title": {
+                                      "value": f"🚨 {title} - 新增{len(new_titles)}条",
+                                      "color": "#FF0000"
+                                  },
+                                  "content": {
+                                      "value": "\n".join([f"🔴 {title}" for title in new_titles[:5]]),
+                                      "color": "#173177"
+                                  },
+                                  "time": {
+                                      "value": time.strftime('%Y-%m-%d %H:%M:%S'),
+                                      "color": "#173177"
+                                  },
+                                  "remark": {
+                                      "value": f"点击查看完整内容",
+                                      "color": "#173177"
+                                  }
                               }
                           }
                           r_alt = self.session.post(send_url, json=data_alt, timeout=15).json()
