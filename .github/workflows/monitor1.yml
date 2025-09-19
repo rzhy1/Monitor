@@ -158,36 +158,29 @@ jobs:
                       print(f"[ERROR] 获取 access_token 失败: {e}")
                       return None
 
-              def send_wechat_template_message(self, access_token, title, content, url_desc):
-                  """发送微信模板消息 - 兼容多种模板格式"""
+              def send_wechat_template_message(self, access_token, title, new_titles, all_titles, url_desc):
+                  """发送微信模板消息 - 特别突出显示新增标题"""
                   send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}"
                   
-                  # 方案1：使用标准字段格式（first, keyword1, keyword2, remark）
+                  # 构建消息内容
+                  new_titles_text = "\n".join([f"🔴 {title}" for title in new_titles])
+                  all_titles_text = "\n".join([f"• {title}" for title, link in all_titles[:15]])  # 最多显示15条
+                  if len(all_titles) > 15:
+                      all_titles_text += f"\n...等{len(all_titles)}条内容"
+                  
+                  # 使用标准字段格式
                   data = {
                       "touser": self.wechat_to_user,
                       "template_id": self.wechat_template_id,
                       "url": url_desc,
                       "data": {
-                          "first": {"value": "🔔 网页内容更新通知", "color": "#173177"},
+                          "first": {"value": "🚨 发现新增内容！", "color": "#FF0000"},
                           "keyword1": {"value": title, "color": "#173177"},
-                          "keyword2": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
-                          "keyword3": {"value": f"发现{len(content.split('\\n')) if content else 0}个新项目", "color": "#173177"},
-                          "remark": {"value": f"{content}\\n点击查看详情", "color": "#173177"}
+                          "keyword2": {"value": f"新增{len(new_titles)}条", "color": "#FF0000"},
+                          "keyword3": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
+                          "remark": {"value": f"新增内容：\n{new_titles_text}\n\n所有内容：\n{all_titles_text}\n\n点击查看详情", "color": "#173177"}
                       }
                   }
-                  
-                  # 方案2：如果模板使用其他字段名，可以尝试这种格式
-                  # data = {
-                  #     "touser": self.wechat_to_user,
-                  #     "template_id": self.wechat_template_id,
-                  #     "url": url_desc,
-                  #     "data": {
-                  #         "title": {"value": title, "color": "#173177"},
-                  #         "time": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
-                  #         "content": {"value": content, "color": "#173177"},
-                  #         "remark": {"value": "点击查看详情", "color": "#173177"}
-                  #     }
-                  # }
                   
                   try:
                       r = self.session.post(send_url, json=data, timeout=15).json()
@@ -196,15 +189,16 @@ jobs:
                           return True
                       else:
                           print(f"❌ 微信消息发送失败: {r.get('errmsg')}")
-                          # 如果第一种格式失败，尝试第二种格式
+                          
+                          # 备用方案：使用通用字段格式
                           data_alt = {
                               "touser": self.wechat_to_user,
                               "template_id": self.wechat_template_id,
                               "url": url_desc,
                               "data": {
-                                  "title": {"value": title, "color": "#173177"},
+                                  "title": {"value": f"🚨 {title} - 新增{len(new_titles)}条", "color": "#FF0000"},
                                   "time": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
-                                  "content": {"value": content, "color": "#173177"},
+                                  "content": {"value": f"新增内容：\n{new_titles_text}\n\n所有内容：\n{all_titles_text}", "color": "#173177"},
                                   "remark": {"value": "点击查看详情", "color": "#173177"}
                               }
                           }
@@ -239,24 +233,14 @@ jobs:
                       prev_titles = prev_state.get(url, {}).get("titles", [])
 
                       if curr_hash != prev_hash:
-                          # 找出新增的标题
-                          new_titles = [title for title, link in titles_with_links if title not in prev_titles]
+                          # 找出新增的标题（只比较标题文本）
+                          current_title_texts = [title for title, link in titles_with_links]
+                          new_titles = [title for title in current_title_texts if title not in prev_titles]
                           
                           if new_titles:
-                              # 构建消息内容
-                              content_lines = []
-                              for title_text, detail_url in titles_with_links:
-                                  if title_text in new_titles:
-                                      content_lines.append(f"🔴 {title_text}")
-                                  else:
-                                      content_lines.append(f"⚪ {title_text}")
-                              
-                              content_str = "\n".join(content_lines[:10])  # 最多显示10条
-                              if len(content_lines) > 10:
-                                  content_str += f"\n...等{len(content_lines)}条内容"
-                              
+                              print(f"发现 {len(new_titles)} 个新增标题: {new_titles}")
                               desc = self.url_descriptions.get(url, "页面更新")
-                              self.send_wechat_template_message(access_token, desc, content_str, url)
+                              self.send_wechat_template_message(access_token, desc, new_titles, titles_with_links, url)
                           else:
                               print("页面有更新，但未检测到新增标题")
                           
