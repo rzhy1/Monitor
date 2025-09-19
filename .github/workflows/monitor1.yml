@@ -68,14 +68,62 @@ jobs:
                   self.wechat_template_id = os.getenv("WECHAT_TEMPLATE_ID")
                   self.wechat_to_user = os.getenv("WECHAT_TO_USER")
 
+              def extract_project_titles(self, html, current_url):
+                  """提取项目标题和链接"""
+                  soup = BeautifulSoup(html, 'html.parser')
+                  titles_with_links = []
+                  
+                  # 尝试多种选择器
+                  selectors = [
+                      'div.menu.menu_time',
+                      'div.list > div',
+                      '.listWrap .list > div'
+                  ]
+                  
+                  menu_divs = []
+                  for selector in selectors:
+                      menu_divs = soup.select(selector)
+                      if menu_divs:
+                          break
+                  
+                  if not menu_divs:
+                      menu_divs = soup.find_all('div', onclick=lambda x: x and 'window.open' in x)
+                  
+                  for div in menu_divs:
+                      title_element = div.find('h3') or div.find('a') or div
+                      title_text = title_element.get_text(strip=True)
+                      
+                      if not title_text or len(title_text) < 5:
+                          continue
+                          
+                      # 提取链接
+                      onclick = div.get('onclick', '')
+                      detail_url = current_url
+                      
+                      if onclick and 'window.open' in onclick:
+                          match = re.search(r"window\.open\s*\(\s*['\"]([^'\"]+)['\"]", onclick)
+                          if match:
+                              detail_path = match.group(1)
+                              if detail_path.startswith('/'):
+                                  detail_url = f"https://ztb.cxjw.hangzhou.gov.cn:8092{detail_path}"
+                              else:
+                                  detail_url = detail_path
+                      
+                      titles_with_links.append((title_text, detail_url))
+                  
+                  return titles_with_links
+
               def get_content_hash(self, url):
                   try:
                       r = self.session.get(url, headers={'User-Agent': USER_AGENT}, timeout=10)
                       r.raise_for_status()
-                      soup = BeautifulSoup(r.text, 'html.parser')
-                      titles = [t.get_text(strip=True) for t in soup.find_all('a')]
-                      content = "\n".join(sorted(titles))
-                      return hashlib.sha256(content.encode()).hexdigest(), titles
+                      
+                      # 提取项目标题
+                      titles_with_links = self.extract_project_titles(r.text, url)
+                      sorted_titles = sorted([title for title, link in titles_with_links])
+                      content_for_hash = "\n".join(sorted_titles)
+                      
+                      return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
                   except Exception as e:
                       print(f"[ERROR] {url} 获取失败: {e}")
                       return None, []
@@ -100,26 +148,65 @@ jobs:
                       return None
 
               def send_wechat_template_message(self, access_token, title, content, url_desc):
+                  """发送微信模板消息 - 兼容多种模板格式"""
                   send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}"
-                 data = {
-                    "touser": self.wechat_to_user,
-                    "template_id": self.wechat_template_id,
-                    "url": url_desc,  # 点击消息跳转的 URL
-                    "data": {
-                        "title": {"value": title, "color": "#173177"},
-                        "content": {"value": content, "color": "#173177"},
-                        "url": {"value": url_desc, "color": "#173177"}
-                    }
-                 }
-
+                  
+                  # 方案1：使用标准字段格式（first, keyword1, keyword2, remark）
+                  data = {
+                      "touser": self.wechat_to_user,
+                      "template_id": self.wechat_template_id,
+                      "url": url_desc,
+                      "data": {
+                          "first": {"value": "🔔 网页内容更新通知", "color": "#173177"},
+                          "keyword1": {"value": title, "color": "#173177"},
+                          "keyword2": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
+                          "keyword3": {"value": f"发现{len(content.split('\\n')) if content else 0}个新项目", "color": "#173177"},
+                          "remark": {"value": f"{content}\\n点击查看详情", "color": "#173177"}
+                      }
+                  }
+                  
+                  # 方案2：如果模板使用其他字段名，可以尝试这种格式
+                  # data = {
+                  #     "touser": self.wechat_to_user,
+                  #     "template_id": self.wechat_template_id,
+                  #     "url": url_desc,
+                  #     "data": {
+                  #         "title": {"value": title, "color": "#173177"},
+                  #         "time": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
+                  #         "content": {"value": content, "color": "#173177"},
+                  #         "remark": {"value": "点击查看详情", "color": "#173177"}
+                  #     }
+                  # }
+                  
                   try:
                       r = self.session.post(send_url, json=data, timeout=15).json()
                       if r.get("errcode") == 0:
                           print(f"✅ 微信消息发送成功: {title}")
+                          return True
                       else:
-                          print(f"❌ 微信消息发送失败: {r}")
+                          print(f"❌ 微信消息发送失败: {r.get('errmsg')}")
+                          # 如果第一种格式失败，尝试第二种格式
+                          data_alt = {
+                              "touser": self.wechat_to_user,
+                              "template_id": self.wechat_template_id,
+                              "url": url_desc,
+                              "data": {
+                                  "title": {"value": title, "color": "#173177"},
+                                  "time": {"value": time.strftime('%Y-%m-%d %H:%M:%S'), "color": "#173177"},
+                                  "content": {"value": content, "color": "#173177"},
+                                  "remark": {"value": "点击查看详情", "color": "#173177"}
+                              }
+                          }
+                          r_alt = self.session.post(send_url, json=data_alt, timeout=15).json()
+                          if r_alt.get("errcode") == 0:
+                              print(f"✅ 微信消息发送成功(备用格式): {title}")
+                              return True
+                          else:
+                              print(f"❌ 微信消息发送失败(备用格式): {r_alt.get('errmsg')}")
+                              return False
                   except Exception as e:
                       print(f"[ERROR] 微信消息发送异常: {e}")
+                      return False
 
               def run(self):
                   prev_state = self.load_state()
@@ -133,19 +220,42 @@ jobs:
 
                   for url in self.check_urls:
                       print(f"\n检查: {url}")
-                      curr_hash, titles = self.get_content_hash(url)
+                      curr_hash, titles_with_links = self.get_content_hash(url)
+                      if curr_hash is None:
+                          continue
+                          
                       prev_hash = prev_state.get(url, {}).get("hash")
+                      prev_titles = prev_state.get(url, {}).get("titles", [])
 
                       if curr_hash != prev_hash:
-                          new_titles = [t for t in titles if t not in prev_state.get(url, {}).get("titles", [])]
+                          # 找出新增的标题
+                          new_titles = [title for title, link in titles_with_links if title not in prev_titles]
+                          
                           if new_titles:
-                              content_str = "\n".join(new_titles)
-                              self.send_wechat_template_message(access_token, self.url_descriptions.get(url, "页面更新"), content_str, url)
+                              # 构建消息内容
+                              content_lines = []
+                              for title_text, detail_url in titles_with_links:
+                                  if title_text in new_titles:
+                                      content_lines.append(f"🔴 {title_text}")
+                                  else:
+                                      content_lines.append(f"⚪ {title_text}")
+                              
+                              content_str = "\n".join(content_lines[:10])  # 最多显示10条
+                              if len(content_lines) > 10:
+                                  content_str += f"\n...等{len(content_lines)}条内容"
+                              
+                              desc = self.url_descriptions.get(url, "页面更新")
+                              self.send_wechat_template_message(access_token, desc, content_str, url)
                           else:
                               print("页面有更新，但未检测到新增标题")
+                          
                           changed_urls.append(url)
 
-                      curr_state[url] = {"hash": curr_hash, "titles": titles}
+                      # 保存当前状态（只保存标题文本，不保存链接）
+                      curr_state[url] = {
+                          "hash": curr_hash,
+                          "titles": [title for title, link in titles_with_links]
+                      }
                       time.sleep(1)
 
                   self.save_state(curr_state)
