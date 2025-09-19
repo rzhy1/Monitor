@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'monitor.yml'
+      - '.github/workflows/monitor.yml'
       - 'url_state.json'
   schedule:
     - cron: '0 23,0-13 * * *'
