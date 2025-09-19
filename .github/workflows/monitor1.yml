@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'monitor1.yml'
+      - '.github/workflows/monitor1.yml'
       - 'url_state1.json'
   schedule:
     - cron: '0 23,0-13 * * *'
@@ -117,9 +117,14 @@ jobs:
                       return None, []
 
               def load_state(self):
-                  if os.path.exists(STATE_FILE):
-                      with open(STATE_FILE,'r',encoding='utf-8') as f: return json.load(f)
-                  return {}
+                if os.path.exists(STATE_FILE):
+                    try:
+                        with open(STATE_FILE, 'r', encoding='utf-8') as f:
+                            return json.load(f)
+                    except json.JSONDecodeError:
+                        print(f"[WARN] {STATE_FILE} 内容格式错误，已重置为空 JSON")
+                        return {}
+                return {}
 
               def save_state(self,state):
                   with open(STATE_FILE,'w',encoding='utf-8') as f: json.dump(state,f,ensure_ascii=False,indent=2)
