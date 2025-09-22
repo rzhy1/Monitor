@@ -95,9 +95,5 @@
       "杭州市城市轨道交通15号线一期工程供电系统0.4kV开关柜及环控电控柜设备",
       "杭州市城市轨道交通3号线二期工程公安通信系统设备"
     ]
-  },
-  "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": {
-    "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "titles": []
   }
 }
