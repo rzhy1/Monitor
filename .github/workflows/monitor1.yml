@@ -161,27 +161,42 @@ jobs:
                       print(f"[ERROR] 获取 access_token 失败: {e}")
                       return None
 
+              def truncate_content(self, content, max_length=180):
+                  """截断内容，确保不超过微信字段限制"""
+                  if len(content) <= max_length:
+                      return content
+                  # 截断并添加省略号
+                  return content[:max_length-3] + "..."
+
               def send_wechat_template_message(self, access_token, title, new_titles, all_titles, url_desc):
-                  """发送微信模板消息 - 特别突出显示新增标题"""
+                  """发送微信模板消息 - 处理内容截断问题"""
                   send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}"
                   
-                  # 构建消息内容 - 简化版本，避免字段混淆
-                  new_titles_text = "\n".join([f"🔴 {title}" for title in new_titles[:8]])  # 最多显示8条新增
-                  if len(new_titles) > 8:
-                      new_titles_text += f"\n...等{len(new_titles)}条新增内容"
+                  # 构建新增内容，限制长度
+                  if new_titles:
+                      # 只显示前5条新增内容，避免过长
+                      new_titles_display = new_titles[:5]
+                      new_content = "\n".join([f"🔴 {title}" for title in new_titles_display])
+                      if len(new_titles) > 5:
+                          new_content += f"\n...等{len(new_titles)}条新增"
+                  else:
+                      new_content = "页面内容有变化，但未检测到具体新增标题"
                   
-                  # 使用更简单的模板格式，避免字段顺序问题
+                  # 确保内容不超过微信限制
+                  new_content = self.truncate_content(new_content, 180)
+                  
+                  # 根据您的模板结构调整字段
                   data = {
                       "touser": self.wechat_to_user,
                       "template_id": self.wechat_template_id,
                       "url": url_desc,
                       "data": {
                           "first": {
-                              "value": f"🚨 {title} 发现{len(new_titles)}条新增内容！",
+                              "value": self.truncate_content(f"🚨 {title} 发现{len(new_titles)}条新增", 50),
                               "color": "#FF0000"
                           },
                           "keyword1": {
-                              "value": "\n".join([f"• {title}" for title in new_titles[:5]]),
+                              "value": new_content,
                               "color": "#173177"
                           },
                           "keyword2": {
@@ -189,11 +204,14 @@ jobs:
                               "color": "#173177"
                           },
                           "remark": {
-                              "value": f"共发现{len(new_titles)}条新增内容\n点击查看详情 →",
+                              "value": self.truncate_content(f"点击查看完整内容，共{len(all_titles)}条", 50),
                               "color": "#173177"
                           }
                       }
                   }
+                  
+                  print(f"调试信息 - 新增内容长度: {len(new_content)}")
+                  print(f"调试信息 - 新增内容预览: {new_content[:100]}...")
                   
                   try:
                       r = self.session.post(send_url, json=data, timeout=15).json()
@@ -202,38 +220,7 @@ jobs:
                           return True
                       else:
                           print(f"❌ 微信消息发送失败: {r.get('errmsg')}")
-                          
-                          # 备用方案：使用更通用的字段名
-                          data_alt = {
-                              "touser": self.wechat_to_user,
-                              "template_id": self.wechat_template_id,
-                              "url": url_desc,
-                              "data": {
-                                  "title": {
-                                      "value": f"🚨 {title} - 新增{len(new_titles)}条",
-                                      "color": "#FF0000"
-                                  },
-                                  "content": {
-                                      "value": "\n".join([f"🔴 {title}" for title in new_titles[:5]]),
-                                      "color": "#173177"
-                                  },
-                                  "time": {
-                                      "value": time.strftime('%Y-%m-%d %H:%M:%S'),
-                                      "color": "#173177"
-                                  },
-                                  "remark": {
-                                      "value": f"点击查看完整内容",
-                                      "color": "#173177"
-                                  }
-                              }
-                          }
-                          r_alt = self.session.post(send_url, json=data_alt, timeout=15).json()
-                          if r_alt.get("errcode") == 0:
-                              print(f"✅ 微信消息发送成功(备用格式): {title}")
-                              return True
-                          else:
-                              print(f"❌ 微信消息发送失败(备用格式): {r_alt.get('errmsg')}")
-                              return False
+                          return False
                   except Exception as e:
                       print(f"[ERROR] 微信消息发送异常: {e}")
                       return False
@@ -262,12 +249,10 @@ jobs:
                           current_title_texts = [title for title, link in titles_with_links]
                           new_titles = [title for title in current_title_texts if title not in prev_titles]
                           
-                          if new_titles:
+                          if new_titles or curr_hash != prev_hash:
                               print(f"发现 {len(new_titles)} 个新增标题: {new_titles}")
                               desc = self.url_descriptions.get(url, "页面更新")
                               self.send_wechat_template_message(access_token, desc, new_titles, titles_with_links, url)
-                          else:
-                              print("页面有更新，但未检测到新增标题")
                           
                           changed_urls.append(url)
 
