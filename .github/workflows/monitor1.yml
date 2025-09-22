@@ -52,7 +52,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 urllib3
 
-      - name: Check and notify
+            - name: Check and notify
         run: |
           python - << "EOF"
           import os
@@ -77,37 +77,27 @@ jobs:
                   self.wechat_to_user = os.getenv("WECHAT_TO_USER")
 
               def extract_project_titles(self, html, current_url):
-                  """提取项目标题和链接"""
                   soup = BeautifulSoup(html, 'html.parser')
                   titles_with_links = []
-                  
-                  # 尝试多种选择器
                   selectors = [
                       'div.menu.menu_time',
                       'div.list > div',
                       '.listWrap .list > div'
                   ]
-                  
                   menu_divs = []
                   for selector in selectors:
                       menu_divs = soup.select(selector)
                       if menu_divs:
                           break
-                  
                   if not menu_divs:
                       menu_divs = soup.find_all('div', onclick=lambda x: x and 'window.open' in x)
-                  
                   for div in menu_divs:
                       title_element = div.find('h3') or div.find('a') or div
                       title_text = title_element.get_text(strip=True)
-                      
                       if not title_text or len(title_text) < 5:
                           continue
-                          
-                      # 提取链接
                       onclick = div.get('onclick', '')
                       detail_url = current_url
-                      
                       if onclick and 'window.open' in onclick:
                           match = re.search(r"window\.open\s*\(\s*['\"]([^'\"]+)['\"]", onclick)
                           if match:
@@ -116,35 +106,30 @@ jobs:
                                   detail_url = f"https://ztb.cxjw.hangzhou.gov.cn:8092{detail_path}"
                               else:
                                   detail_url = detail_path
-                      
                       titles_with_links.append((title_text, detail_url))
-                  
                   return titles_with_links
 
               def get_content_hash(self, url):
                   try:
                       r = self.session.get(url, headers={'User-Agent': USER_AGENT}, timeout=10)
                       r.raise_for_status()
-                      
-                      # 提取项目标题
                       titles_with_links = self.extract_project_titles(r.text, url)
                       sorted_titles = sorted([title for title, link in titles_with_links])
                       content_for_hash = "\n".join(sorted_titles)
-                      
                       return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
                   except Exception as e:
                       print(f"[ERROR] {url} 获取失败: {e}")
                       return None, []
 
               def load_state(self):
-                if os.path.exists(STATE_FILE):
-                    try:
-                        with open(STATE_FILE, 'r', encoding='utf-8') as f:
-                            return json.load(f)
-                    except json.JSONDecodeError:
-                        print(f"[WARN] {STATE_FILE} 内容格式错误，已重置为空 JSON")
-                        return {}
-                return {}
+                  if os.path.exists(STATE_FILE):
+                      try:
+                          with open(STATE_FILE, 'r', encoding='utf-8') as f:
+                              return json.load(f)
+                      except json.JSONDecodeError:
+                          print(f"[WARN] {STATE_FILE} 内容格式错误，已重置为空 JSON")
+                          return {}
+                  return {}
 
               def save_state(self, state):
                   with open(STATE_FILE, 'w', encoding='utf-8') as f:
@@ -160,60 +145,51 @@ jobs:
                       return None
 
               def truncate_content(self, content, max_bytes=200):
-                  """按字节长度截断，避免中文或 emoji 被截断"""
                   encoded = content.encode("utf-8")
                   if len(encoded) <= max_bytes:
                       return content
-                  truncated = encoded[:max_bytes-3]  # 预留省略号
+                  truncated = encoded[:max_bytes-3]
                   return truncated.decode("utf-8", errors="ignore") + "..."
 
               def send_wechat_template_message(self, access_token, title, new_titles, all_titles, url_desc):
-                  """发送微信模板消息（控制字段长度 & 显示前3条标题）"""
                   send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}"
                   
-                  # 构建新增内容，限制为前3条
+                  # remark 展示前 5 条新增标题
                   if new_titles:
-                      new_titles_display = new_titles[:3]
-                      new_content = "\n".join([f"🔴 {t}" for t in new_titles_display])
-                      if len(new_titles) > 3:
-                          new_content += f"\n...等{len(new_titles)}条新增"
+                      new_titles_display = new_titles[:5]
+                      remark_content = "\n".join([f"🔴 {t}" for t in new_titles_display])
+                      if len(new_titles) > 5:
+                          remark_content += f"\n...等{len(new_titles)}条新增"
                   else:
-                      new_content = "页面内容有变化，但未检测到具体新增标题"
-                  
-                  # 各字段截断
-                  first_value = self.truncate_content(f"🚨 {title} 发现{len(new_titles)}条新增", 50)
-                  keyword1_value = self.truncate_content(new_content, 200)
-                  keyword2_value = time.strftime('%Y-%m-%d %H:%M:%S')
-                  remark_value = self.truncate_content(f"点击查看完整内容，共{len(all_titles)}条", 100)
-                  
-                  # 模板数据
+                      remark_content = "页面内容有变化，但未检测到具体新增标题"
+
                   data = {
                       "touser": self.wechat_to_user,
                       "template_id": self.wechat_template_id,
                       "url": url_desc,
                       "data": {
                           "first": {
-                              "value": first_value,
+                              "value": self.truncate_content(f"🚨 {title} 有更新", 50),
                               "color": "#FF0000"
                           },
                           "keyword1": {
-                              "value": keyword1_value,
+                              "value": f"共 {len(new_titles)} 条新增",
                               "color": "#173177"
                           },
                           "keyword2": {
-                              "value": keyword2_value,
+                              "value": time.strftime('%Y-%m-%d %H:%M:%S'),
                               "color": "#173177"
                           },
                           "remark": {
-                              "value": remark_value,
+                              "value": self.truncate_content(remark_content, 200),
                               "color": "#173177"
                           }
                       }
                   }
                   
-                  print(f"调试信息 - first: {first_value}")
-                  print(f"调试信息 - keyword1: {keyword1_value}")
-                  print(f"调试信息 - remark: {remark_value}")
+                  print(f"调试信息 - first: {data['data']['first']['value']}")
+                  print(f"调试信息 - keyword1: {data['data']['keyword1']['value']}")
+                  print(f"调试信息 - remark: {data['data']['remark']['value']}")
                   
                   try:
                       r = self.session.post(send_url, json=data, timeout=15).json()
@@ -231,46 +207,37 @@ jobs:
                   prev_state = self.load_state()
                   curr_state = {}
                   changed_urls = []
-
                   access_token = self.get_wechat_access_token()
                   if not access_token:
                       print("无法获取微信 access_token，退出")
                       return
-
                   for url in self.check_urls:
                       print(f"\n检查: {url}")
                       curr_hash, titles_with_links = self.get_content_hash(url)
                       if curr_hash is None:
                           continue
-                          
                       prev_hash = prev_state.get(url, {}).get("hash")
                       prev_titles = prev_state.get(url, {}).get("titles", [])
-
                       if curr_hash != prev_hash:
-                          # 找出新增的标题（只比较标题文本）
                           current_title_texts = [title for title, link in titles_with_links]
                           new_titles = [title for title in current_title_texts if title not in prev_titles]
-                          
                           if new_titles or curr_hash != prev_hash:
                               print(f"发现 {len(new_titles)} 个新增标题: {new_titles}")
                               desc = self.url_descriptions.get(url, "页面更新")
                               self.send_wechat_template_message(access_token, desc, new_titles, titles_with_links, url)
-                          
                           changed_urls.append(url)
-
-                      # 保存当前状态（只保存标题文本，不保存链接）
                       curr_state[url] = {
                           "hash": curr_hash,
                           "titles": [title for title, link in titles_with_links]
                       }
                       time.sleep(1)
-
                   self.save_state(curr_state)
                   print(f"检查完成，共更新 {len(changed_urls)} 个 URL")
 
           if __name__ == "__main__":
               Monitor().run()
           EOF
+
 
       - name: Commit and push state file
         run: |
