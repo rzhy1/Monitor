@@ -161,57 +161,61 @@ jobs:
                       print(f"[ERROR] 获取 access_token 失败: {e}")
                       return None
 
-              def truncate_content(self, content, max_length=180):
-                  """截断内容，确保不超过微信字段限制"""
-                  if len(content) <= max_length:
+              def truncate_content(self, content, max_bytes=200):
+                  """按字节长度截断，避免中文或 emoji 被截断"""
+                  encoded = content.encode("utf-8")
+                  if len(encoded) <= max_bytes:
                       return content
-                  # 截断并添加省略号
-                  return content[:max_length-3] + "..."
+                  truncated = encoded[:max_bytes-3]  # 预留省略号
+                  return truncated.decode("utf-8", errors="ignore") + "..."
 
               def send_wechat_template_message(self, access_token, title, new_titles, all_titles, url_desc):
-                  """发送微信模板消息 - 处理内容截断问题"""
+                  """发送微信模板消息（控制字段长度 & 显示前3条标题）"""
                   send_url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}"
                   
-                  # 构建新增内容，限制长度
+                  # 构建新增内容，限制为前3条
                   if new_titles:
-                      # 只显示前5条新增内容，避免过长
-                      new_titles_display = new_titles[:5]
-                      new_content = "\n".join([f"🔴 {title}" for title in new_titles_display])
-                      if len(new_titles) > 5:
+                      new_titles_display = new_titles[:3]
+                      new_content = "\n".join([f"🔴 {t}" for t in new_titles_display])
+                      if len(new_titles) > 3:
                           new_content += f"\n...等{len(new_titles)}条新增"
                   else:
                       new_content = "页面内容有变化，但未检测到具体新增标题"
                   
-                  # 确保内容不超过微信限制
-                  new_content = self.truncate_content(new_content, 180)
+                  # 各字段截断
+                  first_value = self.truncate_content(f"🚨 {title} 发现{len(new_titles)}条新增", 50)
+                  keyword1_value = self.truncate_content(new_content, 200)
+                  keyword2_value = time.strftime('%Y-%m-%d %H:%M:%S')
+                  remark_value = self.truncate_content(f"点击查看完整内容，共{len(all_titles)}条", 100)
                   
-                  # 根据您的模板结构调整字段
+                  # 模板数据
                   data = {
                       "touser": self.wechat_to_user,
                       "template_id": self.wechat_template_id,
                       "url": url_desc,
                       "data": {
                           "first": {
-                              "value": self.truncate_content(f"🚨 {title} 发现{len(new_titles)}条新增", 50),
+                              "value": first_value,
                               "color": "#FF0000"
                           },
                           "keyword1": {
-                              "value": new_content,
+                              "value": keyword1_value,
                               "color": "#173177"
                           },
                           "keyword2": {
-                              "value": time.strftime('%Y-%m-%d %H:%M:%S'),
+                              "value": keyword2_value,
                               "color": "#173177"
                           },
                           "remark": {
-                              "value": self.truncate_content(f"点击查看完整内容，共{len(all_titles)}条", 50),
+                              "value": remark_value,
                               "color": "#173177"
                           }
                       }
                   }
                   
-                  print(f"调试信息 - 新增内容长度: {len(new_content)}")
-                  print(f"调试信息 - 新增内容预览: {new_content[:100]}...")
+                  print(f"调试信息 - first: {first_value}")
+                  print(f"调试信息 - keyword1: {keyword1_value}")
+                  print(f"调试信息 - remark: {remark_value}")
                   
                   try:
                       r = self.session.post(send_url, json=data, timeout=15).json()
