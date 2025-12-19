@@ -8,7 +8,7 @@ on:
       - '.github/workflows/monitor.yml'
       - 'url_state.json'
   schedule:
-    - cron: '0 23,0-13 * * *'
+    - cron: '0 23,0-13 * * *'  # 每天 23:00、0-13点每小时运行
 
 permissions:
   contents: write
@@ -26,16 +26,16 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
+        https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml
       URL_DESCRIPTIONS: |
-        {
-          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
-          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
-          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "杭州地铁特别提醒项目",
-          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
-          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
-          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
-          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果"
-        }
+        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "杭州地铁特别提醒项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
+         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果",
+         "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "测试专用"}
 
     steps:
       - uses: actions/checkout@v6
@@ -44,113 +44,212 @@ jobs:
         with:
           python-version: '3.12'
 
-      - run: pip install requests beautifulsoup4 urllib3
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 urllib3
 
       - name: Check and notify
         run: |
           python - << "EOF"
-          import os, json, re, time, hashlib, requests
+          import os, json, hashlib, time, re, requests
           from bs4 import BeautifulSoup
           from requests.adapters import HTTPAdapter
           from urllib3.util.retry import Retry
 
+          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
           STATE_FILE = "url_state.json"
-          BASE = "https://ztb.cxjw.hangzhou.gov.cn:8092"
 
-          def session():
-              s = requests.Session()
-              r = Retry(total=3, backoff_factor=1, status_forcelist=[429,500,502,503,504])
-              s.mount("http", HTTPAdapter(max_retries=r))
-              s.mount("https", HTTPAdapter(max_retries=r))
-              return s
+          class Monitor:
+              def __init__(self):
+                  self.session = self.create_session()
+                  self.url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
+                  self.check_urls = [u.strip() for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
+                  self.base_url = "https://ztb.cxjw.hangzhou.gov.cn:8092"
 
-          def send_wecom(webhook, content):
-              r = requests.post(
-                  webhook,
-                  json={"msgtype": "markdown", "markdown": {"content": content}},
-                  timeout=10
-              )
-              r.raise_for_status()
+              def create_session(self):
+                  session = requests.Session()
+                  retry = Retry(
+                      total=3,
+                      backoff_factor=1,
+                      status_forcelist=[429, 500, 502, 503, 504],
+                      allowed_methods=['GET']
+                  )
+                  adapter = HTTPAdapter(max_retries=retry)
+                  session.mount('https', adapter)
+                  session.mount('http', adapter)
+                  return session
 
-          def parse_items(html):
-              soup = BeautifulSoup(html, "html.parser")
-              items = {}
-              for d in soup.select("div.menu.menu_time"):
-                  onclick = d.get("onclick", "")
-                  m = re.search(r"detailId=(\d+)", onclick)
-                  if not m:
-                      continue
-                  did = m.group(1)
-                  title = d.get_text(strip=True)
-                  url = f"{BASE}/detail.jhtml?detailId={did}"
-                  items[did] = {"title": title, "url": url}
-              return items
+              def extract_project_titles(self, html, current_url):
+                  soup = BeautifulSoup(html, 'html.parser')
+                  titles_with_links = []
 
-          urls = [u for u in os.getenv("CHECK_URLS","").splitlines() if u.strip()]
-          descs = json.loads(os.getenv("URL_DESCRIPTIONS","{}"))
-          webhooks = [w for w in os.getenv("WEBHOOK_URLS","").splitlines() if w.strip()]
-          s = session()
+                  selectors = [
+                      'div.menu.menu_time',
+                      'div.list > div',
+                      '.listWrap .list > div'
+                  ]
 
-          try:
-              state = json.load(open(STATE_FILE))
-          except:
-              state = {}
+                  menu_divs = []
+                  for selector in selectors:
+                      menu_divs = soup.select(selector)
+                      if menu_divs:
+                          break
 
-          new_state = {}
-          notify = {}
+                  if not menu_divs:
+                      menu_divs = soup.find_all('div', onclick=lambda x: x and 'window.open' in x)
 
-          print("=== 开始检测 URL 更新 ===")
-          for url in urls:
-              print(f"\n🔍 检查 URL: {url}")
-              try:
-                  html = s.get(url, timeout=10).text
-                  items = parse_items(html)
-                  ids = sorted(items.keys())
-                  h = hashlib.sha256("\n".join(ids).encode()).hexdigest()
+                  for div in menu_divs:
+                      title_element = div.find('h3') or div.find('a') or div
+                      title_text = title_element.get_text(strip=True)
+                      if not title_text or len(title_text) < 5:
+                          continue
 
-                  old = set(state.get(url, {}).get("ids", []))
-                  added = [items[i] for i in ids if i not in old]
+                      onclick = div.get('onclick', '')
+                      detail_url = None
+                      if onclick and 'window.open' in onclick:
+                          match = re.search(r"window\.open\s*\(\s*['\"]([^'\"]+)['\"]", onclick)
+                          if match:
+                              detail_path = match.group(1)
+                              detail_url = f"{self.base_url}{detail_path}" if detail_path.startswith('/') else detail_path
+                      if not detail_url:
+                          detail_url = current_url
 
-                  new_state[url] = {"hash": h, "ids": ids}
+                      titles_with_links.append((title_text, detail_url))
+                  return titles_with_links
 
-                  print(f"  总公告数量: {len(ids)}")
-                  print(f"  新增公告数量: {len(added)}")
-                  if state.get(url, {}).get("hash") != h:
-                      print(f"  哈希值变化: {state.get(url, {}).get('hash')} -> {h}")
+              def get_content_hash(self, url):
+                  try:
+                      response = self.session.get(url, headers={'User-Agent': USER_AGENT}, timeout=10)
+                      response.raise_for_status()
+                      titles_with_links = self.extract_project_titles(response.text, url)
+                      sorted_titles = sorted([title for title, link in titles_with_links])
+                      content_for_hash = "\n".join(sorted_titles)
+                      return hashlib.sha256(content_for_hash.encode()).hexdigest(), response.text
+                  except Exception as e:
+                      print(f"[ERROR] 检查 {url} 失败: {str(e)}")
+                      return None, None
 
-                  if added:
-                      notify[url] = added
+              def load_state(self):
+                  try:
+                      with open(STATE_FILE, 'r') as f:
+                          state = json.load(f)
+                  except (FileNotFoundError, json.JSONDecodeError):
+                      state = {}
+                  for url in self.check_urls:
+                      if url not in state:
+                          state[url] = {"hash": None, "titles": []}
+                      elif isinstance(state[url], str):
+                          state[url] = {"hash": state[url], "titles": []}
+                  return state
 
-              except Exception as e:
-                  print(f"  ❌ 请求或解析失败: {e}")
+              def save_state(self, state):
+                  try:
+                      with open(STATE_FILE, 'w') as f:
+                          json.dump(state, f, indent=2)
+                  except IOError as e:
+                      print(f"[ERROR] 保存状态失败: {str(e)}")
 
-              time.sleep(1)
+              def get_new_titles(self, current_titles, previous_titles):
+                  previous_set = set(previous_titles)
+                  new_titles = [title for title in current_titles if title[0] not in previous_set]
+                  return new_titles
 
-          if notify:
-              print("\n=== 检测到新增公告，发送企业微信通知 ===")
-              for u, items in notify.items():
-                  lines = [f"### 📢 {descs.get(u,u)} 有新公告"]
-                  for i in items:
-                      lines.append(f"- [{i['title']}]({i['url']})")
-                  content = "\n".join(lines)
+              def send_notifications(self, changed_urls, new_titles_map):
+                  markdown_msgs = []
+                  for url in changed_urls:
+                      desc = self.url_descriptions.get(url, "未知更新")
+                      new_titles = new_titles_map.get(url, [])
+                      if new_titles:
+                          title_links = [f"[{title}]({link})" for title, link in new_titles]
+                          title_list = "\n".join([f"🔴 {link}" for link in title_links])
+                          message = f"**{desc}**\n{title_list}\n[🔵查看详情]({url})"
+                          if len(message) > 4000:
+                              parts = self.split_long_message(message)
+                              markdown_msgs.extend(parts)
+                          else:
+                              markdown_msgs.append(message)
+                      else:
+                          message = f"**{desc}**\n页面内容有变化，但没有检测到新增项目\n[🔵查看详情]({url})"
+                          markdown_msgs.append(message)
 
-                  for wh in webhooks:
+                  webhook_urls = os.getenv("WEBHOOK_URLS")
+                  if webhook_urls:
                       try:
-                          send_wecom(wh, content)
-                          print(f"  ✅ 已发送通知到 {wh}")
-                      except Exception as e:
-                          print(f"  ❌ 发送通知失败: {e}")
-          else:
-              print("\n✅ 未检测到任何新增公告")
+                          webhooks = json.loads(webhook_urls)
+                          self._send_wechatwork(markdown_msgs, webhooks)
+                      except json.JSONDecodeError:
+                          print("WEBHOOK_URLS 格式错误")
+                  else:
+                      print("未设置 WEBHOOK_URLS，跳过通知发送")
 
-          json.dump(new_state, open(STATE_FILE,"w"), indent=2, ensure_ascii=False)
-          print("\n=== URL 检测完成，状态文件已更新 ===")
+              def split_long_message(self, message, max_length=4000):
+                  parts = []
+                  while len(message) > max_length:
+                      split_pos = message.rfind('\n', 0, max_length)
+                      if split_pos == -1:
+                          split_pos = max_length
+                      parts.append(message[:split_pos])
+                      message = message[split_pos:]
+                  if message:
+                      parts.append(message)
+                  return parts
+
+              def _send_wechatwork(self, items, webhooks):
+                  for webhook in webhooks:
+                      for i, item in enumerate(items):
+                          data = {"msgtype": "markdown", "markdown": {"content": item}}
+                          try:
+                              resp = self.session.post(webhook['url'], json=data, timeout=15)
+                              if resp.status_code == 200 and resp.json().get('errcode') == 0:
+                                  print(f"✅ 第 {i+1} 条消息发送成功")
+                              else:
+                                  print(f"❌ 第 {i+1} 条消息发送失败")
+                          except Exception as e:
+                              print(f"[ERROR] 企业微信通知异常: {str(e)}")
+                          time.sleep(1)
+
+              def run(self):
+                  previous_state = self.load_state()
+                  current_state = {}
+                  changed_urls = []
+                  new_titles_map = {}
+
+                  for url in self.check_urls:
+                      print(f"\n检查 URL: {url}")
+                      current_hash, html_content = self.get_content_hash(url)
+                      if current_hash:
+                          current_titles = self.extract_project_titles(html_content, url)
+                          previous_titles = previous_state.get(url, {}).get("titles", [])
+                          new_titles = self.get_new_titles(current_titles, previous_titles)
+                          current_state[url] = {"hash": current_hash, "titles": [t[0] for t in current_titles]}
+                          previous_hash = previous_state.get(url, {}).get("hash")
+                          if new_titles or previous_hash != current_hash:
+                              changed_urls.append(url)
+                              new_titles_map[url] = new_titles
+                              print(f"URL {url} 检测到变化: 新增 {len(new_titles)} 个, 哈希变化={previous_hash != current_hash}")
+                          else:
+                              print(f"URL {url} 未检测到变化")
+                      time.sleep(1)
+
+                  if changed_urls:
+                      self.send_notifications(changed_urls, new_titles_map)
+                      self.save_state(current_state)
+                  else:
+                      print("未检测到任何变化")
+
+          if __name__ == "__main__":
+              Monitor().run()
           EOF
 
-      - name: Commit state
+      - name: Commit and push state file
         run: |
-          git config --global user.name github-actions[bot]
-          git config --global user.email github-actions[bot]@users.noreply.github.com
-          git add url_state.json
-          git commit -m "Update URL states" || true
-          git push || true
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet url_state.json; then
+            echo "No changes detected in url_state.json."
+          else
+            git add url_state.json
+            git commit -m "Update URL states [skip ci]" || echo "No changes to commit."
+            git push origin HEAD || echo "Push failed"
+            echo "状态文件已更新并提交"
