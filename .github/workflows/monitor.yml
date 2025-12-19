@@ -26,367 +26,99 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
-        https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml
       URL_DESCRIPTIONS: |
-        {"https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "杭州地铁特别提醒项目",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
-         "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果",
-         "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "测试专用"}
+        {
+          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
+          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2332": "杭州地铁招标预公示",
+          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3508": "杭州地铁特别提醒项目",
+          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
+          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
+          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
+          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果"
+        }
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install \
-            requests \
-            beautifulsoup4 \
-            urllib3
+      - run: |
+          pip install requests beautifulsoup4 urllib3
 
       - name: Check and notify
         run: |
           python - << "EOF"
-          import os
-          import json
-          import hashlib
-          import time
-          import re
-          import requests
-          from bs4 import BeautifulSoup, Comment
+          import os, json, re, time, hashlib, requests
+          from bs4 import BeautifulSoup
           from requests.adapters import HTTPAdapter
           from urllib3.util.retry import Retry
 
-          # 常量配置
-          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
           STATE_FILE = "url_state.json"
+          BASE = "https://ztb.cxjw.hangzhou.gov.cn:8092"
 
-          class Monitor:
-              def __init__(self):
-                  self.session = self.create_session()
-                  self.url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
-                  self.check_urls = [u.strip() for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
-                  self.base_url = "https://ztb.cxjw.hangzhou.gov.cn:8092"
+          def session():
+              s = requests.Session()
+              r = Retry(total=3, backoff_factor=1, status_forcelist=[429,500,502,503,504])
+              s.mount("http", HTTPAdapter(max_retries=r))
+              s.mount("https", HTTPAdapter(max_retries=r))
+              return s
 
-              def create_session(self):
-                  """创建带重试机制的会话"""
-                  session = requests.Session()
-                  retry = Retry(
-                      total=3,
-                      backoff_factor=1,
-                      status_forcelist=[429, 500, 502, 503, 504],
-                      allowed_methods=['GET']
-                  )
-                  adapter = HTTPAdapter(max_retries=retry)
-                  session.mount('https', adapter)
-                  session.mount('http', adapter)
-                  return session
+          def parse_items(html):
+              soup = BeautifulSoup(html, "html.parser")
+              items = {}
+              for d in soup.select("div.menu.menu_time"):
+                  onclick = d.get("onclick","")
+                  m = re.search(r"detailId=(\d+)", onclick)
+                  if not m:
+                      continue
+                  did = m.group(1)
+                  title = d.get_text(strip=True)
+                  url = BASE + m.group(0).replace("detailId=","/detail.jhtml?detailId=")
+                  items[did] = {"title": title, "url": url}
+              return items
 
-              def extract_project_titles(self, html, current_url):
-                  """提取项目标题和链接 - 使用更灵活的选择器"""
-                  soup = BeautifulSoup(html, 'html.parser')
-                  titles_with_links = []
-                  
-                  # 尝试多种可能的选择器
-                  selectors = [
-                      'div.menu.menu_time',
-                      'div.list > div',  # 直接获取列表下的div
-                      '.listWrap .list > div'  # 更具体的选择器
-                  ]
-                  
-                  menu_divs = []
-                  for selector in selectors:
-                      menu_divs = soup.select(selector)
-                      if menu_divs:
-                          print(f"使用选择器 '{selector}' 找到了 {len(menu_divs)} 个元素")
-                          break
-                  
-                  if not menu_divs:
-                      print("警告: 未找到任何项目元素，尝试备用选择器")
-                      # 备用方案: 查找包含onclick的div
-                      menu_divs = soup.find_all('div', onclick=lambda x: x and 'window.open' in x)
-                      print(f"备用选择器找到了 {len(menu_divs)} 个元素")
-                  
-                  print(f"总共找到 {len(menu_divs)} 个可能的项目元素")
-                  
-                  for i, div in enumerate(menu_divs):
-                      # 优先查找h3，如果没有则查找其他可能包含标题的标签
-                      title_element = div.find('h3') or div.find('a') or div
-                      title_text = title_element.get_text(strip=True)
-                      
-                      # 过滤掉空标题或非项目标题
-                      if not title_text or len(title_text) < 5:
-                          continue
-                          
-                      print(f"项目 {i+1}: {title_text}")
-                      
-                      # 尝试从onclick属性中提取链接
-                      onclick = div.get('onclick', '')
-                      detail_url = None
-                      
-                      if onclick and 'window.open' in onclick:
-                          # 使用正则表达式提取URL
-                          match = re.search(r"window\.open\s*\(\s*['\"]([^'\"]+)['\"]", onclick)
-                          if match:
-                              detail_path = match.group(1)
-                              # 构建完整URL
-                              if detail_path.startswith('/'):
-                                  detail_url = f"{self.base_url}{detail_path}"
-                              else:
-                                  detail_url = detail_path
-                      
-                      # 如果没有提取到详细链接，使用当前页面URL
-                      if not detail_url:
-                          detail_url = current_url
-                      
-                      titles_with_links.append((title_text, detail_url))
-                  
-                  print(f"成功提取 {len(titles_with_links)} 个项目标题")
-                  return titles_with_links
+          urls = [u for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
+          descs = json.loads(os.getenv("URL_DESCRIPTIONS"))
+          s = session()
 
-              def get_content_hash(self, url):
-                  """获取内容哈希值 - 专注于项目内容本身，忽略顺序"""
-                  try:
-                      response = self.session.get(
-                          url,
-                          headers={'User-Agent': USER_AGENT, 'Cache-Control': 'no-cache'},
-                          timeout=10
-                      )
-                      response.raise_for_status()
-                      
-                      # 提取所有项目标题和链接，基于这些内容计算哈希
-                      titles_with_links = self.extract_project_titles(response.text, url)
-                      
-                      # 对项目标题进行排序，确保顺序不影响哈希值
-                      sorted_titles = sorted([title for title, link in titles_with_links])
-                      
-                      # 只使用排序后的项目标题来计算哈希，忽略链接和顺序
-                      content_for_hash = "\n".join(sorted_titles)
-                      
-                      print(f"使用排序后的项目标题计算哈希，内容长度: {len(content_for_hash)}")
-                      return hashlib.sha256(content_for_hash.encode()).hexdigest(), response.text
-                      
-                  except Exception as e:
-                      print(f"[ERROR] 检查 {url} 失败: {str(e)}")
-                      return None, None
+          try:
+              state = json.load(open(STATE_FILE))
+          except:
+              state = {}
 
-              def load_state(self):
-                  """加载历史状态"""
-                  try:
-                      with open(STATE_FILE, 'r') as f:
-                          state = json.load(f)
-                  except (FileNotFoundError, json.JSONDecodeError):
-                      state = {}
-                  
-                  # 确保状态文件有正确的结构
-                  for url in self.check_urls:
-                      if url not in state:
-                          state[url] = {"hash": None, "titles": []}
-                      elif isinstance(state[url], str):  # 兼容旧版本的状态文件
-                          state[url] = {"hash": state[url], "titles": []}
-                  
-                  return state
+          new_state = {}
+          notify = {}
 
-              def save_state(self, state):
-                  """保存当前状态"""
-                  try:
-                      with open(STATE_FILE, 'w') as f:
-                          json.dump(state, f, indent=2)
-                  except IOError as e:
-                      print(f"[ERROR] 保存状态失败: {str(e)}")
+          for url in urls:
+              html = s.get(url, timeout=10).text
+              items = parse_items(html)
+              ids = sorted(items.keys())
+              h = hashlib.sha256("\n".join(ids).encode()).hexdigest()
 
-              def get_new_titles(self, current_titles, previous_titles):
-                  """找出新增的标题"""
-                  # 将之前的标题转换为集合以便快速查找
-                  previous_set = set(previous_titles)
-                  # 找出当前标题中不在之前标题集合中的项目
-                  new_titles = [title for title in current_titles if title[0] not in previous_set]
-                  
-                  print(f"之前有 {len(previous_set)} 个项目，当前有 {len(current_titles)} 个项目，新增 {len(new_titles)} 个项目")
-                  return new_titles
+              old = set(state.get(url, {}).get("ids", []))
+              added = [items[i] for i in ids if i not in old]
 
-              def send_notifications(self, changed_urls, new_titles_map):
-                  """发送通知"""
-                  # 准备消息内容
-                  markdown_msgs = []  # 改为列表，存储多条消息
-                  
-                  for url in changed_urls:
-                      desc = self.url_descriptions.get(url, "未知更新")
-                      new_titles = new_titles_map.get(url, [])
-                      
-                      if new_titles:
-                          # 为每个新增标题创建带链接的格式
-                          title_links = []
-                          for title, link in new_titles:
-                              title_links.append(f"[{title}]({link})")
-                          
-                          # 将项目列表的标记改为红色圆点
-                          title_list = "\n".join([f"🔴 {link}" for link in title_links])
-                          
-                          # 构建单条消息
-                          message = f"**{desc}**\n{title_list}\n[🔵查看详情]({url})"
-                          
-                          # 检查消息长度
-                          if len(message) > 4000:  # 留出一些空间给消息头
-                              # 如果消息过长，分割成多条
-                              parts = self.split_long_message(message)
-                              markdown_msgs.extend(parts)
-                          else:
-                              markdown_msgs.append(message)
-                      else:
-                          # 页面内容有变化但没有新增项目
-                          message = f"**{desc}**\n页面内容有变化，但没有检测到新增项目\n[🔵查看详情]({url})"
-                          markdown_msgs.append(message)
-                  
-                  # 企业微信通知
-                  webhook_urls = os.getenv("WEBHOOK_URLS")
-                  if webhook_urls:
-                      try:
-                          webhooks = json.loads(webhook_urls)
-                          self._send_wechatwork(markdown_msgs, webhooks)
-                      except json.JSONDecodeError:
-                          print("WEBHOOK_URLS 格式错误，无法解析为JSON")
-                  else:
-                      print("未设置 WEBHOOK_URLS，跳过通知发送")
+              new_state[url] = {"hash": h, "ids": ids}
+              if added:
+                  notify[url] = added
 
-              def split_long_message(self, message, max_length=4000):
-                  """分割过长的消息"""
-                  parts = []
-                  while len(message) > max_length:
-                      # 找到最后一个换行符位置，尽量在完整行处分割
-                      split_pos = message.rfind('\n', 0, max_length)
-                      if split_pos == -1:
-                          # 如果没有找到换行符，就在最大长度处分割
-                          split_pos = max_length
-                      
-                      parts.append(message[:split_pos])
-                      message = message[split_pos:]
-                  
-                  if message:
-                      parts.append(message)
-                  
-                  return parts
+              time.sleep(1)
 
-              def _send_wechatwork(self, items, webhooks):
-                  """发送企业微信通知"""
-                  for webhook in webhooks:
-                      try:
-                          print(f"准备发送 {len(items)} 条消息到 {webhook.get('note', '未知webhook')}")
-                          
-                          # 逐条发送消息，避免一次性发送过多
-                          for i, item in enumerate(items):
-                              print(f"发送第 {i+1}/{len(items)} 条消息")
-                              
-                              data = {
-                                  "msgtype": "markdown",
-                                  "markdown": {
-                                      "content": item
-                                  }
-                              }
-                              
-                              resp = self.session.post(
-                                  webhook['url'],
-                                  json=data,
-                                  timeout=15
-                              )
-                              
-                              print(f"响应状态码: {resp.status_code}")
-                              if resp.status_code == 200:
-                                  result = resp.json()
-                                  if result.get('errcode') == 0:
-                                      print(f"✅ 第 {i+1} 条消息发送成功")
-                                  else:
-                                      print(f"❌ 第 {i+1} 条消息发送失败: {result.get('errmsg')}")
-                              else:
-                                  print(f"❌ 第 {i+1} 条消息发送失败: {resp.status_code}")
-                              
-                              # 添加短暂延迟，避免频率限制
-                              time.sleep(1)
-                              
-                      except Exception as e:
-                          print(f"[ERROR] 企业微信通知异常: {str(e)}")
-                          import traceback
-                          traceback.print_exc()
+          if notify:
+              for u, items in notify.items():
+                  print(f"{descs.get(u,u)} 新增 {len(items)} 条")
+                  for i in items:
+                      print(" +", i["title"])
 
-              def run(self):
-                  """主执行流程"""
-                  previous_state = self.load_state()
-                  current_state = {}
-                  changed_urls = []
-                  new_titles_map = {}  # 存储每个URL对应的新增项目标题和链接
-
-                  for url in self.check_urls:
-                      print(f"\n检查 URL: {url}")
-                      result = self.get_content_hash(url)
-                      if result[0] is not None:
-                          current_hash, html_content = result
-                          # 提取当前所有标题
-                          current_titles = self.extract_project_titles(html_content, url)
-                          
-                          # 获取之前的标题
-                          previous_titles = previous_state.get(url, {}).get("titles", [])
-                          
-                          # 找出新增的标题
-                          new_titles = self.get_new_titles(current_titles, previous_titles)
-                          
-                          # 准备当前状态存储
-                          current_state[url] = {
-                              "hash": current_hash,
-                              "titles": [title[0] for title in current_titles]  # 只存储标题文本，不存储链接
-                          }
-                          
-                          # 如果有新增标题或哈希值变化
-                          previous_hash = previous_state.get(url, {}).get("hash")
-                          if new_titles or previous_hash != current_hash:
-                              changed_urls.append(url)
-                              new_titles_map[url] = new_titles
-                              print(f"URL {url} 检测到变化: 新增项目={len(new_titles)}个, 哈希变化={previous_hash != current_hash}")
-                          else:
-                              print(f"URL {url} 未检测到变化")
-                          
-                      time.sleep(1)  # 基础请求间隔
-
-                  if changed_urls:
-                      print(f"\n检测到 {len(changed_urls)} 项更新")
-                      for url in changed_urls:
-                          desc = self.url_descriptions.get(url, "未知更新")
-                          new_titles = new_titles_map.get(url, [])
-                          print(f"⭐ {desc}: {url}")
-                          if new_titles:
-                              for title, link in new_titles:
-                                  print(f"  新增项目: {title} -> {link}")
-                          else:
-                              print("  页面内容有变化，但没有检测到新增项目")
-                      
-                      self.send_notifications(changed_urls, new_titles_map)
-                      self.save_state(current_state)
-                  else:
-                      print("未检测到任何变化")
-
-          if __name__ == "__main__":
-              Monitor().run()
+          json.dump(new_state, open(STATE_FILE,"w"), indent=2, ensure_ascii=False)
           EOF
 
-      - name: Commit and push state file
+      - name: Commit state
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet url_state.json; then
-            echo "No changes detected in url_state.json."
-          else
-            echo "Changes detected in url_state.json, preparing to commit..."
-            git add url_state.json
-            git commit -m "Update URL states [skip ci]" || echo "No changes to commit."
-            git push origin HEAD || echo "Push failed, please check permissions or network issues."
-            echo "状态文件已更新并提交"
-          fi
+          git config --global user.name github-actions[bot]
+          git config --global user.email github-actions[bot]@users.noreply.github.com
+          git add url_state.json
+          git commit -m "Update URL states" || true
+          git push || true
