@@ -26,7 +26,6 @@ jobs:
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511
         https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512
-        https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml
       URL_DESCRIPTIONS: |
         {
           "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=2331": "杭州地铁招标计划发布",
@@ -35,8 +34,7 @@ jobs:
           "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3509": "杭州地铁招标核准项目",
           "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3510": "杭州地铁招标文件公示",
           "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3511": "杭州地铁中标公示",
-          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果",
-          "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": "测试专用"
+          "https://ztb.cxjw.hangzhou.gov.cn:8092/search/queryContents.jhtml?titleOrCode=%E5%9F%8E%E5%B8%82%E8%BD%A8%E9%81%93%E4%BA%A4%E9%80%9A&status=5&channelId=3512": "杭州地铁中标结果"
         }
 
     steps:
@@ -67,22 +65,35 @@ jobs:
               s.mount("https", HTTPAdapter(max_retries=r))
               return s
 
+          def send_wecom(webhook, content):
+              r = requests.post(
+                  webhook,
+                  json={
+                      "msgtype": "markdown",
+                      "markdown": {"content": content}
+                  },
+                  timeout=10
+              )
+              r.raise_for_status()
+
           def parse_items(html):
               soup = BeautifulSoup(html, "html.parser")
               items = {}
               for d in soup.select("div.menu.menu_time"):
-                  onclick = d.get("onclick","")
+                  onclick = d.get("onclick", "")
                   m = re.search(r"detailId=(\d+)", onclick)
                   if not m:
                       continue
                   did = m.group(1)
                   title = d.get_text(strip=True)
-                  url = BASE + m.group(0).replace("detailId=","/detail.jhtml?detailId=")
+                  url = f"{BASE}/detail.jhtml?detailId={did}"
                   items[did] = {"title": title, "url": url}
               return items
 
-          urls = [u for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
-          descs = json.loads(os.getenv("URL_DESCRIPTIONS"))
+          urls = [u for u in os.getenv("CHECK_URLS","").splitlines() if u.strip()]
+          descs = json.loads(os.getenv("URL_DESCRIPTIONS","{}"))
+          webhooks = [w for w in os.getenv("WEBHOOK_URLS","").splitlines() if w.strip()]
+
           s = session()
 
           try:
@@ -108,11 +119,14 @@ jobs:
 
               time.sleep(1)
 
-          if notify:
-              for u, items in notify.items():
-                  print(f"{descs.get(u,u)} 新增 {len(items)} 条")
-                  for i in items:
-                      print(" +", i["title"])
+          for u, items in notify.items():
+              lines = [f"### 📢 {descs.get(u,u)} 有新公告"]
+              for i in items:
+                  lines.append(f"- [{i['title']}]({i['url']})")
+              content = "\n".join(lines)
+
+              for wh in webhooks:
+                  send_wecom(wh, content)
 
           json.dump(new_state, open(STATE_FILE,"w"), indent=2, ensure_ascii=False)
           EOF
