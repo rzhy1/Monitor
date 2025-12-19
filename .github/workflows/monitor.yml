@@ -44,8 +44,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - run: |
-          pip install requests beautifulsoup4 urllib3
+      - run: pip install requests beautifulsoup4 urllib3
 
       - name: Check and notify
         run: |
@@ -68,10 +67,7 @@ jobs:
           def send_wecom(webhook, content):
               r = requests.post(
                   webhook,
-                  json={
-                      "msgtype": "markdown",
-                      "markdown": {"content": content}
-                  },
+                  json={"msgtype": "markdown", "markdown": {"content": content}},
                   timeout=10
               )
               r.raise_for_status()
@@ -93,7 +89,6 @@ jobs:
           urls = [u for u in os.getenv("CHECK_URLS","").splitlines() if u.strip()]
           descs = json.loads(os.getenv("URL_DESCRIPTIONS","{}"))
           webhooks = [w for w in os.getenv("WEBHOOK_URLS","").splitlines() if w.strip()]
-
           s = session()
 
           try:
@@ -104,31 +99,52 @@ jobs:
           new_state = {}
           notify = {}
 
+          print("=== 开始检测 URL 更新 ===")
           for url in urls:
-              html = s.get(url, timeout=10).text
-              items = parse_items(html)
-              ids = sorted(items.keys())
-              h = hashlib.sha256("\n".join(ids).encode()).hexdigest()
+              print(f"\n🔍 检查 URL: {url}")
+              try:
+                  html = s.get(url, timeout=10).text
+                  items = parse_items(html)
+                  ids = sorted(items.keys())
+                  h = hashlib.sha256("\n".join(ids).encode()).hexdigest()
 
-              old = set(state.get(url, {}).get("ids", []))
-              added = [items[i] for i in ids if i not in old]
+                  old = set(state.get(url, {}).get("ids", []))
+                  added = [items[i] for i in ids if i not in old]
 
-              new_state[url] = {"hash": h, "ids": ids}
-              if added:
-                  notify[url] = added
+                  new_state[url] = {"hash": h, "ids": ids}
+
+                  print(f"  总公告数量: {len(ids)}")
+                  print(f"  新增公告数量: {len(added)}")
+                  if state.get(url, {}).get("hash") != h:
+                      print(f"  哈希值变化: {state.get(url, {}).get('hash')} -> {h}")
+
+                  if added:
+                      notify[url] = added
+
+              except Exception as e:
+                  print(f"  ❌ 请求或解析失败: {e}")
 
               time.sleep(1)
 
-          for u, items in notify.items():
-              lines = [f"### 📢 {descs.get(u,u)} 有新公告"]
-              for i in items:
-                  lines.append(f"- [{i['title']}]({i['url']})")
-              content = "\n".join(lines)
+          if notify:
+              print("\n=== 检测到新增公告，发送企业微信通知 ===")
+              for u, items in notify.items():
+                  lines = [f"### 📢 {descs.get(u,u)} 有新公告"]
+                  for i in items:
+                      lines.append(f"- [{i['title']}]({i['url']})")
+                  content = "\n".join(lines)
 
-              for wh in webhooks:
-                  send_wecom(wh, content)
+                  for wh in webhooks:
+                      try:
+                          send_wecom(wh, content)
+                          print(f"  ✅ 已发送通知到 {wh}")
+                      except Exception as e:
+                          print(f"  ❌ 发送通知失败: {e}")
+          else:
+              print("\n✅ 未检测到任何新增公告")
 
           json.dump(new_state, open(STATE_FILE,"w"), indent=2, ensure_ascii=False)
+          print("\n=== URL 检测完成，状态文件已更新 ===")
           EOF
 
       - name: Commit state
