@@ -1,428 +1,261 @@
-name: Monitor Zhejiang Tender Notices
+name: Monitor URL Changes
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - '.github/workflows/monitor.yml'
       - 'url_state.json'
   schedule:
-    # UTC 23:00、00:00-13:00，对应北京时间 07:00-21:00，每小时检查一次
-    - cron: '0 23,0-13 * * *'
+    - cron: '0 23,0-13 * * *'  # 每天 23:00、0-13点每小时运行
 
 permissions:
   contents: write
 
-concurrency:
-  group: zhejiang-tender-monitor
-  cancel-in-progress: false
-
 jobs:
   check_url_changes:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     env:
+      # 如果你有代理，把下面的注释取消，并填入你的代理地址（例如 socks5://127.0.0.1:1080 或 http://user:pass@ip:port）
+      # PROXY_URL: "http://你的代理IP:端口" 
       WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }}
-      PYTHONUNBUFFERED: '1'
-      CHECK_URLS: |
-        https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001011
-        https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001001
-        https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001003
-        https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001004
-        https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001005
+      BASE_URL: "https://ggzy.zj.gov.cn/jyxxgk/list.html"
       URL_DESCRIPTIONS: |
         {
-          "https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001011": "浙江-招标文件公示",
-          "https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001001": "浙江-招标公告",
-          "https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001003": "浙江-开标结果公示",
-          "https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001004": "浙江-中标候选人公示",
-          "https://ggzy.zj.gov.cn/jyxxgk/list.html?catenum=002001005": "浙江-中标结果公告"
+          "招标文件公示": "浙江-招标文件公示",
+          "招标公告": "浙江-招标公告",
+          "开标结果公示": "浙江-开标结果公示",
+          "中标候选人公示": "浙江-中标候选人公示",
+          "中标结果公告": "浙江-中标结果公告"
         }
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install playwright beautifulsoup4 requests
-          python -m playwright install --with-deps chromium
+          pip install playwright requests beautifulsoup4 urllib3
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
 
       - name: Check and notify
-        id: monitor
         run: |
-          python - <<'PY'
-          import hashlib
-          import json
-          import os
-          import re
-          import sys
-          import time
-          from pathlib import Path
-          from urllib.parse import urljoin
-
-          import requests
+          python - << "EOF"
+          import os, json, hashlib, time, requests
           from bs4 import BeautifulSoup
-          from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
           from playwright.sync_api import sync_playwright
 
-          BASE_URL = "https://ggzy.zj.gov.cn"
-          API_MARKER = "getFullTextDataNew"
-          STATE_FILE = Path("url_state.json")
+          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          STATE_FILE = "url_state.json"
           KEYWORD = "杭州市城市轨道交通"
-          USER_AGENT = (
-              "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-              "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-          )
-          NAVIGATION_TIMEOUT_MS = 60000
-          API_TIMEOUT_MS = 45000
-          MAX_RECORDS_PER_PAGE = 100
-
+          BASE_URL = os.getenv("BASE_URL")
+          PROXY_URL = os.getenv("PROXY_URL") # 从环境变量读取代理
 
           class Monitor:
               def __init__(self):
-                  raw_urls = os.getenv("CHECK_URLS", "")
-                  self.check_urls = [line.strip() for line in raw_urls.splitlines() if line.strip()]
-                  if not self.check_urls:
-                      raise RuntimeError("CHECK_URLS 未配置或为空")
+                  self.url_descriptions = json.loads(os.getenv("URL_DESCRIPTIONS"))
+                  self.check_categories = list(self.url_descriptions.keys())
 
-                  raw_descriptions = os.getenv("URL_DESCRIPTIONS", "{}")
-                  self.url_descriptions = json.loads(raw_descriptions)
-                  self.webhooks = self.load_webhooks()
-
-              @staticmethod
-              def load_webhooks():
-                  raw = os.getenv("WEBHOOK_URLS", "").strip()
-                  if not raw:
-                      print("[WARN] 未设置 WEBHOOK_URLS；发现新增项目时将无法发送通知")
-                      return []
+              def get_page_data(self, category_name, page):
+                  """模拟点击栏目并获取数据"""
                   try:
-                      value = json.loads(raw)
-                  except json.JSONDecodeError as exc:
-                      raise RuntimeError(f"WEBHOOK_URLS 不是合法 JSON：{exc}") from exc
+                      # 1. 检查页面是否是被 WAF 拦截的 405 页面
+                      if "data-spm" in page.content() or "405" in page.title():
+                          print(f"[FATAL] 检测到 WAF 拦截 (405)，当前 IP 被封锁，请配置代理！")
+                          return None, None
 
-                  if not isinstance(value, list):
-                      raise RuntimeError("WEBHOOK_URLS 必须是 JSON 数组")
+                      # 2. 在左侧菜单中找到对应栏目并点击
+                      # 使用文本匹配定位菜单并点击
+                      page.locator(f"text='{category_name}'").first.click()
+                      
+                      # 3. 等待右侧列表的数据刷新出来
+                      page.wait_for_selector('a.infotitle', timeout=15000)
+                      page.wait_for_timeout(1000) # 稍微等一秒确保数据填充完毕
+                      
+                      # 4. 提取网页源码并解析
+                      html = page.content()
+                      soup = BeautifulSoup(html, 'html.parser')
+                      
+                      titles_with_links = []
+                      items = soup.select('a.infotitle')
+                      
+                      for a in items:
+                          title_text = a.get_text(strip=True)
+                          # 匹配关键词
+                          if KEYWORD in title_text:
+                              href = a.get('href', '')
+                              if href.startswith('/'):
+                                  detail_url = f"https://ggzy.zj.gov.cn{href}"
+                              elif href.startswith('http'):
+                                  detail_url = href
+                              else:
+                                  detail_url = BASE_URL
+                              titles_with_links.append((title_text, detail_url))
 
-                  urls = []
-                  for item in value:
-                      if not isinstance(item, dict) or not isinstance(item.get("url"), str):
-                          raise RuntimeError("WEBHOOK_URLS 每项必须是包含 url 字段的对象")
-                      webhook = item["url"].strip()
-                      if not webhook.startswith("https://"):
-                          raise RuntimeError("企业微信 Webhook 必须使用 HTTPS")
-                      urls.append(webhook)
-                  return urls
+                      sorted_titles = sorted([title for title, link in titles_with_links])
+                      content_for_hash = "\n".join(sorted_titles)
+                      return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
 
-              @staticmethod
-              def record_key(record):
-                  # 优先使用详情链接作为稳定标识；没有链接时退回标题。
-                  return record.get("url") or record.get("title", "").strip()
+                  except Exception as e:
+                      print(f"[ERROR] 提取栏目 '{category_name}' 数据失败: {str(e)}")
+                      return None, None
 
               def load_state(self):
-                  if not STATE_FILE.exists():
-                      return {}
                   try:
-                      with STATE_FILE.open("r", encoding="utf-8") as file:
-                          state = json.load(file)
-                      if not isinstance(state, dict):
-                          raise ValueError("状态文件顶层必须是 JSON 对象")
-                      return state
-                  except (json.JSONDecodeError, OSError, ValueError) as exc:
-                      # 状态文件损坏时不静默清空，避免把全部项目误判为首次新增。
-                      raise RuntimeError(f"读取 {STATE_FILE} 失败：{exc}") from exc
+                      with open(STATE_FILE, 'r') as f:
+                          state = json.load(f)
+                  except (FileNotFoundError, json.JSONDecodeError):
+                      state = {}
+                  for cat in self.check_categories:
+                      if cat not in state:
+                          state[cat] = {"hash": None, "titles": []}
+                  return state
 
               def save_state(self, state):
-                  temp_file = STATE_FILE.with_suffix(".json.tmp")
-                  with temp_file.open("w", encoding="utf-8", newline="\n") as file:
-                      json.dump(state, file, ensure_ascii=False, indent=2)
-                      file.write("\n")
-                  temp_file.replace(STATE_FILE)
-
-              @staticmethod
-              def extract_records(data, source_url):
-                  if not isinstance(data, dict):
-                      raise ValueError("接口 JSON 顶层不是对象")
-                  result = data.get("result")
-                  if not isinstance(result, dict):
-                      raise ValueError("接口 JSON 缺少 result 对象")
-                  records = result.get("records")
-                  if not isinstance(records, list):
-                      raise ValueError("接口 JSON 的 result.records 不是数组")
-
-                  parsed = []
-                  for index, item in enumerate(records):
-                      if not isinstance(item, dict):
-                          raise ValueError(f"第 {index + 1} 条记录不是对象")
-                      raw_title = item.get("titlenew") or item.get("title") or ""
-                      title = BeautifulSoup(str(raw_title), "html.parser").get_text(" ", strip=True)
-                      if not title:
-                          continue
-                      if KEYWORD not in title:
-                          continue
-
-                      raw_link = str(item.get("linkurl") or item.get("url") or "").strip()
-                      detail_url = urljoin(BASE_URL + "/", raw_link) if raw_link else source_url
-                      parsed.append({"title": title, "url": detail_url})
-
-                  # 同一页可能出现重复记录，按稳定标识去重。
-                  unique = {}
-                  for record in parsed:
-                      unique[Monitor.record_key(record)] = record
-                  return sorted(unique.values(), key=lambda x: (x["title"], x["url"]))
-
-              def fetch_category(self, url, page):
-                  match = re.search(r"[?&]catenum=(\d+)", url)
-                  if not match:
-                      raise ValueError(f"URL 中没有有效的 catenum：{url}")
-
-                  captured = None
-
-                  def is_target_response(response):
-                      request = response.request
-                      return (
-                          API_MARKER in response.url
-                          and request.method.upper() == "POST"
-                      )
-
                   try:
-                      # 让网页自行发起请求；不改写请求、不手动伪造 API 参数。
-                      with page.expect_response(
-                          is_target_response,
-                          timeout=API_TIMEOUT_MS,
-                      ) as response_info:
-                          page.goto(
-                              url,
-                              wait_until="domcontentloaded",
-                              timeout=NAVIGATION_TIMEOUT_MS,
-                          )
-                      captured = response_info.value
-                  except PlaywrightTimeoutError as exc:
-                      raise RuntimeError(
-                          f"等待页面自身的 {API_MARKER} POST 响应超时；页面可能未发起接口请求或被站点拦截"
-                      ) from exc
+                      with open(STATE_FILE, 'w') as f:
+                          json.dump(state, f, indent=2)
+                  except IOError as e:
+                      print(f"[ERROR] 保存状态失败: {str(e)}")
 
-                  if captured.status != 200:
-                      raise RuntimeError(
-                          f"接口 HTTP 状态异常：{captured.status}，URL={captured.url}"
-                      )
+              def get_new_titles(self, current_titles, previous_titles):
+                  previous_set = set(previous_titles)
+                  return [title for title in current_titles if title[0] not in previous_set]
 
-                  content_type = captured.headers.get("content-type", "").lower()
-                  if "json" not in content_type:
-                      body_preview = captured.text()[:300].replace("\n", " ")
-                      raise RuntimeError(
-                          f"接口返回的 Content-Type 不是 JSON：{content_type!r}；响应片段：{body_preview}"
-                      )
+              def send_notifications(self, changed_categories, new_titles_map):
+                  markdown_msgs = []
+                  for cat in changed_categories:
+                      desc = self.url_descriptions.get(cat, cat)
+                      new_titles = new_titles_map.get(cat, [])
+                      if new_titles:
+                          title_links = [f"[{title}]({link})" for title, link in new_titles]
+                          title_list = "\n".join([f"🔴 {link}" for link in title_links])
+                          message = f"**{desc}**\n{title_list}\n[🔵查看详情]({BASE_URL})"
+                          if len(message) > 4000:
+                              parts = self.split_long_message(message)
+                              markdown_msgs.extend(parts)
+                          else:
+                              markdown_msgs.append(message)
 
-                  try:
-                      data = captured.json()
-                  except Exception as exc:
-                      body_preview = captured.text()[:300].replace("\n", " ")
-                      raise RuntimeError(f"接口响应无法解析为 JSON：{body_preview}") from exc
+                  webhook_urls = os.getenv("WEBHOOK_URLS")
+                  if webhook_urls and markdown_msgs:
+                      try:
+                          webhooks = json.loads(webhook_urls)
+                          self._send_wechatwork(markdown_msgs, webhooks)
+                      except json.JSONDecodeError:
+                          print("WEBHOOK_URLS 格式错误")
+                  elif not markdown_msgs:
+                      print("没有新增数据，跳过通知发送")
 
-                  records = self.extract_records(data, url)
-                  print(
-                      f"[INFO] {self.url_descriptions.get(url, url)}："
-                      f"接口原始记录 {len(data['result']['records'])} 条，"
-                      f"关键词匹配 {len(records)} 条"
-                  )
-                  for record in records[:3]:
-                      print(f"       - {record['title']}")
+              def split_long_message(self, message, max_length=4000):
+                  parts = []
+                  while len(message) > max_length:
+                      split_pos = message.rfind('\n', 0, max_length)
+                      if split_pos == -1:
+                          split_pos = max_length
+                      parts.append(message[:split_pos])
+                      message = message[split_pos:]
+                  if message:
+                      parts.append(message)
+                  return parts
 
-                  # 对标题和链接共同计算摘要，避免同标题不同链接被当成同一内容。
-                  serialized = json.dumps(records, ensure_ascii=False, sort_keys=True)
-                  content_hash = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
-                  return content_hash, records
-
-              @staticmethod
-              def normalize_previous_records(old_value):
-                  """兼容旧版状态格式：titles 为字符串数组的情况。"""
-                  if not isinstance(old_value, dict):
-                      return [], None
-                  records = old_value.get("records")
-                  if isinstance(records, list):
-                      normalized = []
-                      for item in records:
-                          if isinstance(item, dict) and item.get("title"):
-                              normalized.append({
-                                  "title": str(item["title"]),
-                                  "url": str(item.get("url") or ""),
-                              })
-                      return normalized, old_value.get("hash")
-
-                  titles = old_value.get("titles", [])
-                  if isinstance(titles, list):
-                      normalized = [
-                          {"title": str(title), "url": ""}
-                          for title in titles if isinstance(title, str) and title.strip()
-                      ]
-                      return normalized, old_value.get("hash")
-                  return [], old_value.get("hash")
-
-              def find_new_records(self, current_records, previous_records):
-                  previous_urls = {
-                      item.get("url") for item in previous_records if item.get("url")
-                  }
-                  # 兼容旧版只保存标题的状态；新版有链接时仍优先按链接识别。
-                  previous_title_fallback = {
-                      item.get("title", "") for item in previous_records if not item.get("url")
-                  }
-                  return [
-                      item for item in current_records
-                      if item.get("url") not in previous_urls
-                      and item.get("title", "") not in previous_title_fallback
-                  ]
-
-              def send_category_notification(self, url, new_records):
-                  if not new_records:
-                      return True
-                  if not self.webhooks:
-                      print("[ERROR] 有新增项目，但 WEBHOOK_URLS 未配置；保留该栏目旧状态以便下次重试")
-                      return False
-
-                  description = self.url_descriptions.get(url, "浙江公共资源交易平台")
-                  lines = [f"**{description}**", f"关键词：{KEYWORD}", ""]
-                  for record in new_records:
-                      title = record["title"].replace("[", "（").replace("]", "）")
-                      lines.append(f"🔴 [{title}]({record['url']})")
-                  lines.extend(["", f"[查看栏目页面]({url})"])
-                  message = "\n".join(lines)
-
-                  # 企业微信 Markdown 有长度限制，按项目行切分，避免截断链接。
-                  messages = []
-                  current_lines = [f"**{description}**", f"关键词：{KEYWORD}", ""]
-                  current_length = sum(len(line) for line in current_lines)
-                  for record in new_records:
-                      title = record["title"].replace("[", "（").replace("]", "）")
-                      line = f"🔴 [{title}]({record['url']})"
-                      if current_length + len(line) + 1 > 3500 and len(current_lines) > 3:
-                          current_lines.extend(["", f"[查看栏目页面]({url})"])
-                          messages.append("\n".join(current_lines))
-                          current_lines = [f"**{description}（续）**", f"关键词：{KEYWORD}", ""]
-                          current_length = sum(len(x) for x in current_lines)
-                      current_lines.append(line)
-                      current_length += len(line) + 1
-                  current_lines.extend(["", f"[查看栏目页面]({url})"])
-                  messages.append("\n".join(current_lines))
-
-                  all_ok = True
-                  for webhook_index, webhook in enumerate(self.webhooks, start=1):
-                      for message_index, content in enumerate(messages, start=1):
+              def _send_wechatwork(self, items, webhooks):
+                  for webhook in webhooks:
+                      for i, item in enumerate(items):
+                          data = {"msgtype": "markdown", "markdown": {"content": item}}
                           try:
-                              response = requests.post(
-                                  webhook,
-                                  json={"msgtype": "markdown", "markdown": {"content": content}},
-                                  timeout=20,
-                              )
-                              response.raise_for_status()
-                              result = response.json()
-                              if result.get("errcode") != 0:
-                                  raise RuntimeError(f"企业微信返回错误：{result}")
-                              print(
-                                  f"[INFO] 企业微信 Webhook {webhook_index} "
-                                  f"消息 {message_index}/{len(messages)} 发送成功"
-                              )
-                          except Exception as exc:
-                              all_ok = False
-                              print(f"[ERROR] 企业微信 Webhook {webhook_index} 发送失败：{exc}")
+                              resp = requests.post(webhook['url'], json=data, timeout=15)
+                              if resp.status_code == 200 and resp.json().get('errcode') == 0:
+                                  print(f"✅ 第 {i+1} 条消息发送成功")
+                              else:
+                                  print(f"❌ 第 {i+1} 条消息发送失败")
+                          except Exception as e:
+                              print(f"[ERROR] 企业微信通知异常: {str(e)}")
                           time.sleep(1)
-                  return all_ok
 
               def run(self):
                   previous_state = self.load_state()
-                  # 从旧状态复制，只有成功抓取且通知成功的栏目才会被更新。
-                  merged_state = dict(previous_state)
-                  success_count = 0
-                  failure_count = 0
-                  notification_failures = 0
+                  current_state = {}
+                  changed_categories = []
+                  new_titles_map = {}
 
-                  with sync_playwright() as playwright:
-                      browser = playwright.chromium.launch(headless=True)
+                  with sync_playwright() as p:
+                      # 配置代理
+                      launch_args = {"headless": True}
+                      if PROXY_URL:
+                          print(f"[INFO] 正在使用代理: {PROXY_URL}")
+                          launch_args["proxy"] = {"server": PROXY_URL}
+                      else:
+                          print("[WARNING] 未配置代理，如果被 WAF 拦截将无法获取数据！")
+
+                      browser = p.chromium.launch(**launch_args)
                       context = browser.new_context(
                           user_agent=USER_AGENT,
-                          viewport={"width": 1440, "height": 1000},
-                          locale="zh-CN",
-                          timezone_id="Asia/Shanghai",
+                          viewport={'width': 1920, 'height': 1080},
+                          locale='zh-CN',
+                          timezone_id='Asia/Shanghai'
                       )
                       page = context.new_page()
+                      
+                      # 注入基础反检测
+                      page.add_init_script("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });")
 
-                      for index, url in enumerate(self.check_urls, start=1):
-                          description = self.url_descriptions.get(url, url)
-                          print(f"\n[{index}/{len(self.check_urls)}] 检查：{description}")
-                          started = time.time()
-                          try:
-                              current_hash, current_records = self.fetch_category(url, page)
-                              old_records, old_hash = self.normalize_previous_records(previous_state.get(url))
-                              is_first_baseline = not previous_state.get(url)
-                              new_records = [] if is_first_baseline else self.find_new_records(
-                                  current_records, old_records
-                              )
-
-                              if is_first_baseline:
-                                  print("[INFO] 首次建立该栏目的基线，不推送历史存量项目")
-
-                              if new_records:
-                                  print(f"[INFO] 检测到新增项目：{len(new_records)} 条")
-                                  notification_ok = self.send_category_notification(url, new_records)
-                                  if not notification_ok:
-                                      notification_failures += 1
-                                      print("[WARN] 通知未全部成功，保留该栏目旧状态，下次运行会重试")
-                                      continue
-                              elif old_hash != current_hash:
-                                  print("[INFO] 栏目内容摘要发生变化，但没有新增项目（可能是更新或删除），不发送新增通知")
-                              else:
-                                  print("[INFO] 没有新增项目")
-
-                              merged_state[url] = {
+                      # 1. 访问一次初始页面
+                      print(f"正在加载初始页面: {BASE_URL}")
+                      page.goto(BASE_URL, wait_until="domcontentloaded", timeout=40000)
+                      
+                      # 2. 循环点击五个分类抓取数据
+                      for cat in self.check_categories:
+                          print(f"\n正在检查栏目: {cat}")
+                          start_time = time.time()
+                          current_hash, current_titles = self.get_page_data(cat, page)
+                          
+                          if current_hash:
+                              previous_titles = previous_state.get(cat, {}).get("titles", [])
+                              new_titles = self.get_new_titles(current_titles, previous_titles)
+                              current_state[cat] = {
                                   "hash": current_hash,
-                                  "records": current_records,
+                                  "titles": [t[0] for t in current_titles]
                               }
-                              success_count += 1
-                          except Exception as exc:
-                              failure_count += 1
-                              print(f"[ERROR] 栏目抓取失败，保留原状态：{exc}")
+                              previous_hash = previous_state.get(cat, {}).get("hash")
+                              
+                              if new_titles or previous_hash != current_hash:
+                                  changed_categories.append(cat)
+                                  new_titles_map[cat] = new_titles
+                                  print(f"  -> 检测到变化: 新增 {len(new_titles)} 个")
+                              else:
+                                  print(f"  -> 未检测到变化")
+                          print(f"[DEBUG] 耗时: {time.time() - start_time:.2f} 秒")
+                          time.sleep(2)
 
-                          print(f"[INFO] 本栏目耗时：{time.time() - started:.1f} 秒")
-                          if index < len(self.check_urls):
-                              time.sleep(2)
-
-                      context.close()
                       browser.close()
 
-                  if success_count > 0:
-                      self.save_state(merged_state)
-                      print(f"[INFO] 状态文件已保存；成功栏目 {success_count} 个，失败栏目 {failure_count} 个")
+                  if changed_categories:
+                      self.send_notifications(changed_categories, new_titles_map)
+                      self.save_state(current_state)
                   else:
-                      print("[ERROR] 所有栏目均抓取失败；未修改状态文件")
-
-                  if failure_count == len(self.check_urls):
-                      sys.exit(1)
-                  if notification_failures:
-                      sys.exit(1)
-
+                      print("未检测到任何变化")
 
           if __name__ == "__main__":
               Monitor().run()
-          PY
+          EOF
 
-      - name: Commit state file
-        if: always()
+      - name: Commit and push state file
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- url_state.json; then
-            echo "状态文件没有变化，无需提交。"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet url_state.json; then
+            echo "No changes detected in url_state.json."
           else
             git add url_state.json
-            git commit -m "Update tender monitor state [skip ci]"
-            git push origin HEAD
+            git commit -m "Update URL states [skip ci]" || echo "No changes to commit."
+            git push origin HEAD || echo "Push failed"
+            echo "状态文件已更新并提交"
           fi
