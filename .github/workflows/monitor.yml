@@ -8,7 +8,7 @@ on:
       - '.github/workflows/monitor.yml'
       - 'url_state.json'
   schedule:
-    - cron: '0 23,0-13 * * *'
+    - cron: '0 23,0-13 * * *'  # 每天 23:00、0-13点每小时运行
 
 permissions:
   contents: write
@@ -82,31 +82,36 @@ jobs:
                   return session
 
               def extract_titles_from_html(self, html):
+                  """从已渲染的 HTML 中提取包含关键词的标题"""
                   soup = BeautifulSoup(html, 'html.parser')
                   titles_with_links = []
+
                   for a in soup.select('a.infotitle'):
                       title_text = a.get_text(strip=True)
                       if not title_text or len(title_text) < 5:
                           continue
                       if KEYWORD not in title_text:
                           continue
+
                       href = a.get('href', '')
                       if not href or href.startswith('javascript'):
                           continue
+
                       if href.startswith('http'):
                           detail_url = href
                       elif href.startswith('/'):
                           detail_url = f"{self.base_url}{href}"
                       else:
                           detail_url = f"{self.base_url}/jyxxgk/{href.lstrip('/')}"
+
                       titles_with_links.append((title_text, detail_url))
+
                   return titles_with_links
 
               def get_content_hash(self, url, page):
+                  """用 Playwright 渲染页面后提取标题"""
                   try:
-                      # 1. 改用 domcontentloaded，先让页面结构加载完
                       page.goto(url, wait_until="domcontentloaded", timeout=60000)
-                      # 2. 等待列表容器出现，将超时延长至 30 秒，给动态请求留足时间
                       page.wait_for_selector('#list li.ewb-public-item', timeout=30000)
                       html = page.content()
                       titles_with_links = self.extract_titles_from_html(html)
@@ -117,7 +122,84 @@ jobs:
                       print(f"[ERROR] 渲染 {url} 失败: {str(e)}")
                       return None, None
 
-              # ... (load_state, save_state, get_new_titles, send_notifications, split_long_message, _send_wechatwork 等函数保持不变)
+              def load_state(self):
+                  try:
+                      with open(STATE_FILE, 'r') as f:
+                          state = json.load(f)
+                  except (FileNotFoundError, json.JSONDecodeError):
+                      state = {}
+                  for url in self.check_urls:
+                      if url not in state:
+                          state[url] = {"hash": None, "titles": []}
+                      elif isinstance(state[url], str):
+                          state[url] = {"hash": state[url], "titles": []}
+                  return state
+
+              def save_state(self, state):
+                  try:
+                      with open(STATE_FILE, 'w') as f:
+                          json.dump(state, f, indent=2)
+                  except IOError as e:
+                      print(f"[ERROR] 保存状态失败: {str(e)}")
+
+              def get_new_titles(self, current_titles, previous_titles):
+                  previous_set = set(previous_titles)
+                  new_titles = [title for title in current_titles if title[0] not in previous_set]
+                  return new_titles
+
+              def send_notifications(self, changed_urls, new_titles_map):
+                  markdown_msgs = []
+                  for url in changed_urls:
+                      desc = self.url_descriptions.get(url, "未知更新")
+                      new_titles = new_titles_map.get(url, [])
+                      if new_titles:
+                          title_links = [f"[{title}]({link})" for title, link in new_titles]
+                          title_list = "\n".join([f"🔴 {link}" for link in title_links])
+                          message = f"**{desc}**\n{title_list}\n[🔵查看详情]({url})"
+                          if len(message) > 4000:
+                              parts = self.split_long_message(message)
+                              markdown_msgs.extend(parts)
+                          else:
+                              markdown_msgs.append(message)
+                      else:
+                          message = f"**{desc}**\n页面内容有变化，但没有检测到新增项目\n[🔵查看详情]({url})"
+                          markdown_msgs.append(message)
+
+                  webhook_urls = os.getenv("WEBHOOK_URLS")
+                  if webhook_urls:
+                      try:
+                          webhooks = json.loads(webhook_urls)
+                          self._send_wechatwork(markdown_msgs, webhooks)
+                      except json.JSONDecodeError:
+                          print("WEBHOOK_URLS 格式错误")
+                  else:
+                      print("未设置 WEBHOOK_URLS，跳过通知发送")
+
+              def split_long_message(self, message, max_length=4000):
+                  parts = []
+                  while len(message) > max_length:
+                      split_pos = message.rfind('\n', 0, max_length)
+                      if split_pos == -1:
+                          split_pos = max_length
+                      parts.append(message[:split_pos])
+                      message = message[split_pos:]
+                  if message:
+                      parts.append(message)
+                  return parts
+
+              def _send_wechatwork(self, items, webhooks):
+                  for webhook in webhooks:
+                      for i, item in enumerate(items):
+                          data = {"msgtype": "markdown", "markdown": {"content": item}}
+                          try:
+                              resp = self.session.post(webhook['url'], json=data, timeout=15)
+                              if resp.status_code == 200 and resp.json().get('errcode') == 0:
+                                  print(f"✅ 第 {i+1} 条消息发送成功")
+                              else:
+                                  print(f"❌ 第 {i+1} 条消息发送失败")
+                          except Exception as e:
+                              print(f"[ERROR] 企业微信通知异常: {str(e)}")
+                          time.sleep(1)
 
               def run(self):
                   previous_state = self.load_state()
@@ -127,14 +209,12 @@ jobs:
 
                   with sync_playwright() as p:
                       browser = p.chromium.launch(headless=True)
-                      # 3. 使用更真实的浏览器上下文
                       context = browser.new_context(
                           user_agent=USER_AGENT,
                           viewport={'width': 1920, 'height': 1080},
                           locale='zh-CN',
                           timezone_id='Asia/Shanghai'
                       )
-                      # 4. 注入脚本，隐藏 webdriver 特征
                       context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
                       page = context.new_page()
 
@@ -152,10 +232,10 @@ jobs:
                               if new_titles or previous_hash != current_hash:
                                   changed_urls.append(url)
                                   new_titles_map[url] = new_titles
-                                  print(f"URL {url} 检测到变化: 新增 {len(new_titles)} 个")
+                                  print(f"URL {url} 检测到变化: 新增 {len(new_titles)} 个, 哈希变化={previous_hash != current_hash}")
                               else:
                                   print(f"URL {url} 未检测到变化")
-                          time.sleep(2) # 适当增加栏目间的间隔
+                          time.sleep(2)
 
                       browser.close()
 
