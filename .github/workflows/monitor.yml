@@ -43,15 +43,20 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install curl_cffi beautifulsoup4 urllib3
+          pip install playwright requests beautifulsoup4 urllib3
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
 
       - name: Check and notify
         run: |
           python - << "EOF"
-          import os, json, hashlib, time, re
-          from curl_cffi import requests
+          import os, json, hashlib, time, re, requests
           from bs4 import BeautifulSoup
+          from playwright.sync_api import sync_playwright
 
+          # 使用你抓包的完全一致的 UA 和特征
+          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36 Edg/158.0.0.0"
           STATE_FILE = "url_state.json"
           KEYWORD = "杭州市城市轨道交通"
           API_URL = "https://ggzy.zj.gov.cn/inteligentsearch/rest/esinteligentsearch/getFullTextDataNew"
@@ -62,73 +67,87 @@ jobs:
                   self.check_urls = [u.strip() for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
                   self.base_url = "https://ggzy.zj.gov.cn"
 
-              def get_content_hash(self, url):
+              def get_content_hash(self, url, page):
                   catenum_match = re.search(r'catenum=(\d+)', url)
                   if not catenum_match:
                       return None, None
                   catenum = catenum_match.group(1)
 
-                  payload = {
-                      "token": "",
-                      "pn": 0,
-                      "rn": 100,
-                      "inc_wd": "",
-                      "exc_wd": "",
-                      "fields": "title;content",
-                      "cnum": "001",
-                      "sort": "{\"webdate\":\"0\"}",
-                      "ssort": "title",
-                      "cl": 200,
-                      "terminal": "",
-                      "condition": [
-                          {
-                              "fieldName": "categorynum",
-                              "equal": catenum,
-                              "notEqual": None,
-                              "equalList": None,
-                              "notEqualList": None,
-                              "isLike": False,
-                              "likeType": 2
-                          }
-                      ],
-                      "time": None,
-                      "highlights": "",
-                      "statistics": None,
-                      "unionCondition": None,
-                      "accuracy": "",
-                      "noParticiple": "1",
-                      "searchRange": None,
-                      "isBusiness": "1"
-                  }
-
-                  headers = {
-                      "Accept": "application/json, text/javascript, */*; q=0.01",
-                      "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-                      "Content-Type": "application/json;charset=UTF-8",
-                      "Origin": self.base_url,
-                      "Referer": url,
-                      "X-Requested-With": "XMLHttpRequest"
-                  }
-
                   try:
-                      # 使用 curl_cffi，伪装成 Chrome 110 的 TLS 指纹，瞬间绕过 405 拦截
-                      resp = requests.post(
-                          API_URL, 
-                          json=payload, 
-                          headers=headers, 
-                          impersonate="chrome110", 
-                          timeout=15
-                      )
+                      # 1. 用浏览器访问一下页面，获取真实的 WAF Cookie
+                      page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                      cookies = page.context.cookies()
+                      cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
+
+                      # 2. 构造基于你抓包的 payload（加上了 infoc:33 浙江省过滤）
+                      payload = {
+                          "token": "",
+                          "pn": 0,
+                          "rn": 100,
+                          "sdt": "",
+                          "edt": "",
+                          "wd": "",
+                          "inc_wd": "",
+                          "exc_wd": "",
+                          "fields": "title",
+                          "cnum": "001",
+                          "sort": "{\"webdate\":\"0\"}",
+                          "ssort": "title",
+                          "cl": 200,
+                          "terminal": "",
+                          "condition": [
+                              {
+                                  "fieldName": "categorynum",
+                                  "isLike": True,
+                                  "likeType": 2,
+                                  "equal": catenum
+                              },
+                              {
+                                  "fieldName": "infoc",
+                                  "isLike": True,
+                                  "likeType": 2,
+                                  "equal": "33"
+                              }
+                          ],
+                          "time": None,
+                          "highlights": "",
+                          "statistics": None,
+                          "unionCondition": None,
+                          "accuracy": "",
+                          "noParticiple": "0",
+                          "searchRange": None,
+                          "isBusiness": "1"
+                      }
+
+                      # 3. 完美复刻你的请求头
+                      headers = {
+                          "User-Agent": USER_AGENT,
+                          "Accept": "application/json, text/javascript, */*; q=0.01",
+                          "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+                          "Content-Type": "application/json;charset=UTF-8",
+                          "Origin": self.base_url,
+                          "Referer": url,
+                          "X-Requested-With": "XMLHttpRequest",
+                          "Sec-Fetch-Dest": "empty",
+                          "Sec-Fetch-Mode": "cors",
+                          "Sec-Fetch-Site": "same-origin",
+                          "sec-ch-ua": '"Chromium";v="158", "Not.A/Brand";v="24", "Microsoft Edge";v="158"',
+                          "sec-ch-ua-mobile": "?0",
+                          "sec-ch-ua-platform": '"Windows"',
+                          "Cookie": cookie_str
+                      }
+
+                      # 4. 发起 POST 请求
+                      resp = requests.post(API_URL, json=payload, headers=headers, timeout=15)
                       
                       if resp.status_code != 200:
-                          print(f"[ERROR] 接口拒绝访问，状态码: {resp.status_code}")
+                          print(f"[ERROR] 状态码: {resp.status_code}, 响应: {resp.text[:100]}")
                           return None, None
                           
                       data = resp.json()
-                      
                       records = data.get("result", {}).get("records", [])
                       titles_with_links = []
-                      
+
                       if not records:
                           print(f"[DEBUG] 接口返回了 0 条数据。")
                       else:
@@ -232,8 +251,7 @@ jobs:
                       for i, item in enumerate(items):
                           data = {"msgtype": "markdown", "markdown": {"content": item}}
                           try:
-                              # 发送通知也使用 curl_cffi 伪装，确保发送成功
-                              resp = requests.post(webhook['url'], json=data, impersonate="chrome110", timeout=15)
+                              resp = requests.post(webhook['url'], json=data, timeout=15)
                               if resp.status_code == 200 and resp.json().get('errcode') == 0:
                                   print(f"✅ 第 {i+1} 条消息发送成功")
                               else:
@@ -248,26 +266,39 @@ jobs:
                   changed_urls = []
                   new_titles_map = {}
 
-                  for url in self.check_urls:
-                      print(f"\n检查 URL: {url}")
-                      start_time = time.time()
-                      current_hash, current_titles = self.get_content_hash(url)
-                      if current_hash:
-                          previous_titles = previous_state.get(url, {}).get("titles", [])
-                          new_titles = self.get_new_titles(current_titles, previous_titles)
-                          current_state[url] = {
-                              "hash": current_hash,
-                              "titles": [t[0] for t in current_titles]
-                          }
-                          previous_hash = previous_state.get(url, {}).get("hash")
-                          if new_titles or previous_hash != current_hash:
-                              changed_urls.append(url)
-                              new_titles_map[url] = new_titles
-                              print(f"URL {url} 检测到变化: 新增 {len(new_titles)} 个")
-                          else:
-                              print(f"URL {url} 未检测到变化")
-                      print(f"[DEBUG] 耗时: {time.time() - start_time:.2f} 秒")
-                      time.sleep(1)
+                  with sync_playwright() as p:
+                      # 启动无头浏览器，仅用于获取 Cookie 和绕过 WAF 环境检测
+                      browser = p.chromium.launch(headless=True)
+                      context = browser.new_context(
+                          user_agent=USER_AGENT,
+                          viewport={'width': 1920, 'height': 1080},
+                          locale='zh-CN',
+                          timezone_id='Asia/Shanghai'
+                      )
+                      page = context.new_page()
+
+                      for url in self.check_urls:
+                          print(f"\n检查 URL: {url}")
+                          start_time = time.time()
+                          current_hash, current_titles = self.get_content_hash(url, page)
+                          if current_hash:
+                              previous_titles = previous_state.get(url, {}).get("titles", [])
+                              new_titles = self.get_new_titles(current_titles, previous_titles)
+                              current_state[url] = {
+                                  "hash": current_hash,
+                                  "titles": [t[0] for t in current_titles]
+                              }
+                              previous_hash = previous_state.get(url, {}).get("hash")
+                              if new_titles or previous_hash != current_hash:
+                                  changed_urls.append(url)
+                                  new_titles_map[url] = new_titles
+                                  print(f"URL {url} 检测到变化: 新增 {len(new_titles)} 个")
+                              else:
+                                  print(f"URL {url} 未检测到变化")
+                          print(f"[DEBUG] 耗时: {time.time() - start_time:.2f} 秒")
+                          time.sleep(1)
+
+                      browser.close()
 
                   if changed_urls:
                       self.send_notifications(changed_urls, new_titles_map)
