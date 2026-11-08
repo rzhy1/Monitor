@@ -332,12 +332,8 @@ jobs:
                   start_time = start.strftime("%Y-%m-%d 00:00:00")
                   end_time = now.strftime("%Y-%m-%d %H:%M:%S")
 
-                  # 先访问栏目页建立 Session Cookie；不依赖页面 JavaScript，也不需要复制个人 Cookie。
-                  page_response = self.session.get(url, timeout=REQUEST_TIMEOUT)
-                  if page_response.status_code != 200:
-                      raise RuntimeError(
-                          f"栏目页面 HTTP {page_response.status_code}：{page_response.url}"
-                      )
+                  # 不再 GET 栏目页面：当前运行环境对栏目页 GET 返回 HTTP 405。
+                  # 直接 POST 搜索接口；Referer 仍使用当前栏目 URL。
 
                   all_records = {}
                   seen_page_signatures = set()
