@@ -58,6 +58,7 @@ jobs:
           USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
           STATE_FILE = "url_state.json"
           KEYWORD = "杭州市城市轨道交通"
+          API_URL = "https://ggzy.zj.gov.cn/inteligentsearch/rest/esinteligentsearch/getFullTextDataNew"
 
           class Monitor:
               def __init__(self):
@@ -65,43 +66,67 @@ jobs:
                   self.check_urls = [u.strip() for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
                   self.base_url = "https://ggzy.zj.gov.cn"
 
-              def get_content_hash(self, url, page):
+              def get_content_hash(self, url, request_context):
                   catenum_match = re.search(r'catenum=(\d+)', url)
                   if not catenum_match:
                       return None, None
                   catenum = catenum_match.group(1)
 
+                  # 直接拉取最新的 100 条，在 Python 里过滤，避免接口不认 wd 参数导致查空
+                  payload = {
+                      "token": "",
+                      "pn": 0,
+                      "rn": 100,
+                      "inc_wd": "",
+                      "exc_wd": "",
+                      "fields": "title;content",
+                      "cnum": "001",
+                      "sort": "{\"webdate\":\"0\"}",
+                      "ssort": "title",
+                      "cl": 200,
+                      "terminal": "",
+                      "condition": [
+                          {
+                              "fieldName": "categorynum",
+                              "equal": catenum,
+                              "notEqual": None,
+                              "equalList": None,
+                              "notEqualList": None,
+                              "isLike": False,
+                              "likeType": 2
+                          }
+                      ],
+                      "time": None,
+                      "highlights": "",
+                      "statistics": None,
+                      "unionCondition": None,
+                      "accuracy": "",
+                      "noParticiple": "1",
+                      "searchRange": None,
+                      "isBusiness": "1"
+                  }
+
+                  headers = {
+                      "Accept": "application/json, text/javascript, */*; q=0.01",
+                      "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                      "Content-Type": "application/json;charset=UTF-8",
+                      "Origin": self.base_url,
+                      "Referer": url,
+                      "X-Requested-With": "XMLHttpRequest"
+                  }
+
                   try:
-                      # 设置路由拦截，在页面发出的请求中强行修改参数
-                      def handle_route(route):
-                          if "getFullTextDataNew" in route.request.url:
-                              try:
-                                  post_data = json.loads(route.request.post_data)
-                                  post_data["wd"] = KEYWORD  # 注入关键词
-                                  post_data["rn"] = 100       # 确保每页100条
-                                  if "condition" in post_data:
-                                      post_data["condition"][0]["equal"] = catenum
-                                  route.continue_(post_data=json.dumps(post_data))
-                              except Exception:
-                                  route.continue_()
-                          else:
-                              route.continue_()
-
-                      page.route("**/*getFullTextDataNew*", handle_route)
-
-                      # 使用 expect_response 监听页面自身发出的、返回200的接口请求
-                      with page.expect_response(
-                          lambda r: "getFullTextDataNew" in r.url and r.status == 200,
-                          timeout=30000
-                      ) as response_info:
-                          page.goto(url, wait_until="domcontentloaded", timeout=60000)
-
-                      response = response_info.value
-                      data = response.json()
+                      # 1. 先通过 context.request 访问页面，获取合法的 Cookie
+                      request_context.get(url, timeout=10000)
                       
-                      # 取消路由拦截，避免影响后续检查
-                      page.unroute("**/*getFullTextDataNew*")
-
+                      # 2. 直接发送 POST 请求（底层使用 Chromium 的网络栈，极快且防屏蔽）
+                      start_time = time.time()
+                      resp = request_context.post(API_URL, data=json.dumps(payload), headers=headers, timeout=15000)
+                      print(f"[DEBUG] 接口请求耗时: {time.time() - start_time:.2f} 秒，状态码: {resp.status}")
+                      
+                      resp.raise_for_status()
+                      data = resp.json()
+                      
                       records = data.get("result", {}).get("records", [])
                       titles_with_links = []
                       
@@ -135,14 +160,9 @@ jobs:
                       return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
 
                   except Exception as e:
-                      print(f"[ERROR] 渲染或拦截接口失败 for {url}: {str(e)}")
-                      try:
-                          page.unroute("**/*getFullTextDataNew*")
-                      except Exception:
-                          pass
+                      print(f"[ERROR] 请求接口失败 for {url}: {str(e)}")
                       return None, None
 
-              # --- 以下为状态管理和通知等辅助方法，保持不变 ---
               def load_state(self):
                   try:
                       with open(STATE_FILE, 'r') as f:
@@ -231,11 +251,12 @@ jobs:
                   with sync_playwright() as p:
                       browser = p.chromium.launch(headless=True)
                       context = browser.new_context(user_agent=USER_AGENT)
-                      page = context.new_page()
+                      # 使用 context.request 发起网络请求，速度极快
+                      request_context = context.request
 
                       for url in self.check_urls:
                           print(f"\n检查 URL: {url}")
-                          current_hash, current_titles = self.get_content_hash(url, page)
+                          current_hash, current_titles = self.get_content_hash(url, request_context)
                           if current_hash:
                               previous_titles = previous_state.get(url, {}).get("titles", [])
                               new_titles = self.get_new_titles(current_titles, previous_titles)
@@ -250,7 +271,7 @@ jobs:
                                   print(f"URL {url} 检测到变化: 新增 {len(new_titles)} 个")
                               else:
                                   print(f"URL {url} 未检测到变化")
-                          time.sleep(2)
+                          time.sleep(1)
 
                       browser.close()
 
