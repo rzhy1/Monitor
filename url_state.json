@@ -73,7 +73,7 @@
       "\u676d\u5dde\u5e02\u57ce\u5e02\u8f68\u9053\u4ea4\u901a9\u53f7\u7ebf\u4e8c\u671f\u5de5\u7a0b\u516c\u5171\u533a\u88c5\u4fee\u82b1\u5c97\u5ca9\u6807\u6bb5"
     ]
   },
-  "https://github.com/rzhy1/aria2-static-build/blob/main/.github/workflows/build_and_release.yml": {
+  "https://raw.githubusercontent.com/rzhy1/aria2-static-build/main/.github/workflows/build_and_release.yml": {
     "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "titles": []
   }
