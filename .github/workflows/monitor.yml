@@ -43,19 +43,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install playwright requests beautifulsoup4 urllib3
-
-      - name: Install Playwright browsers
-        run: playwright install chromium --with-deps
+          pip install curl_cffi beautifulsoup4 urllib3
 
       - name: Check and notify
         run: |
           python - << "EOF"
-          import os, json, hashlib, time, re, requests
+          import os, json, hashlib, time, re
+          from curl_cffi import requests
           from bs4 import BeautifulSoup
-          from playwright.sync_api import sync_playwright
 
-          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
           STATE_FILE = "url_state.json"
           KEYWORD = "杭州市城市轨道交通"
           API_URL = "https://ggzy.zj.gov.cn/inteligentsearch/rest/esinteligentsearch/getFullTextDataNew"
@@ -66,13 +62,12 @@ jobs:
                   self.check_urls = [u.strip() for u in os.getenv("CHECK_URLS").splitlines() if u.strip()]
                   self.base_url = "https://ggzy.zj.gov.cn"
 
-              def get_content_hash(self, url, request_context):
+              def get_content_hash(self, url):
                   catenum_match = re.search(r'catenum=(\d+)', url)
                   if not catenum_match:
                       return None, None
                   catenum = catenum_match.group(1)
 
-                  # 直接拉取最新的 100 条，在 Python 里过滤，避免接口不认 wd 参数导致查空
                   payload = {
                       "token": "",
                       "pn": 0,
@@ -116,15 +111,19 @@ jobs:
                   }
 
                   try:
-                      # 1. 先通过 context.request 访问页面，获取合法的 Cookie
-                      request_context.get(url, timeout=10000)
+                      # 使用 curl_cffi，伪装成 Chrome 110 的 TLS 指纹，瞬间绕过 405 拦截
+                      resp = requests.post(
+                          API_URL, 
+                          json=payload, 
+                          headers=headers, 
+                          impersonate="chrome110", 
+                          timeout=15
+                      )
                       
-                      # 2. 直接发送 POST 请求（底层使用 Chromium 的网络栈，极快且防屏蔽）
-                      start_time = time.time()
-                      resp = request_context.post(API_URL, data=json.dumps(payload), headers=headers, timeout=15000)
-                      print(f"[DEBUG] 接口请求耗时: {time.time() - start_time:.2f} 秒，状态码: {resp.status}")
-                      
-                      resp.raise_for_status()
+                      if resp.status_code != 200:
+                          print(f"[ERROR] 接口拒绝访问，状态码: {resp.status_code}")
+                          return None, None
+                          
                       data = resp.json()
                       
                       records = data.get("result", {}).get("records", [])
@@ -160,7 +159,7 @@ jobs:
                       return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
 
                   except Exception as e:
-                      print(f"[ERROR] 请求接口失败 for {url}: {str(e)}")
+                      print(f"[ERROR] 请求异常 for {url}: {str(e)}")
                       return None, None
 
               def load_state(self):
@@ -233,7 +232,8 @@ jobs:
                       for i, item in enumerate(items):
                           data = {"msgtype": "markdown", "markdown": {"content": item}}
                           try:
-                              resp = requests.post(webhook['url'], json=data, timeout=15)
+                              # 发送通知也使用 curl_cffi 伪装，确保发送成功
+                              resp = requests.post(webhook['url'], json=data, impersonate="chrome110", timeout=15)
                               if resp.status_code == 200 and resp.json().get('errcode') == 0:
                                   print(f"✅ 第 {i+1} 条消息发送成功")
                               else:
@@ -248,32 +248,26 @@ jobs:
                   changed_urls = []
                   new_titles_map = {}
 
-                  with sync_playwright() as p:
-                      browser = p.chromium.launch(headless=True)
-                      context = browser.new_context(user_agent=USER_AGENT)
-                      # 使用 context.request 发起网络请求，速度极快
-                      request_context = context.request
-
-                      for url in self.check_urls:
-                          print(f"\n检查 URL: {url}")
-                          current_hash, current_titles = self.get_content_hash(url, request_context)
-                          if current_hash:
-                              previous_titles = previous_state.get(url, {}).get("titles", [])
-                              new_titles = self.get_new_titles(current_titles, previous_titles)
-                              current_state[url] = {
-                                  "hash": current_hash,
-                                  "titles": [t[0] for t in current_titles]
-                              }
-                              previous_hash = previous_state.get(url, {}).get("hash")
-                              if new_titles or previous_hash != current_hash:
-                                  changed_urls.append(url)
-                                  new_titles_map[url] = new_titles
-                                  print(f"URL {url} 检测到变化: 新增 {len(new_titles)} 个")
-                              else:
-                                  print(f"URL {url} 未检测到变化")
-                          time.sleep(1)
-
-                      browser.close()
+                  for url in self.check_urls:
+                      print(f"\n检查 URL: {url}")
+                      start_time = time.time()
+                      current_hash, current_titles = self.get_content_hash(url)
+                      if current_hash:
+                          previous_titles = previous_state.get(url, {}).get("titles", [])
+                          new_titles = self.get_new_titles(current_titles, previous_titles)
+                          current_state[url] = {
+                              "hash": current_hash,
+                              "titles": [t[0] for t in current_titles]
+                          }
+                          previous_hash = previous_state.get(url, {}).get("hash")
+                          if new_titles or previous_hash != current_hash:
+                              changed_urls.append(url)
+                              new_titles_map[url] = new_titles
+                              print(f"URL {url} 检测到变化: 新增 {len(new_titles)} 个")
+                          else:
+                              print(f"URL {url} 未检测到变化")
+                      print(f"[DEBUG] 耗时: {time.time() - start_time:.2f} 秒")
+                      time.sleep(1)
 
                   if changed_urls:
                       self.send_notifications(changed_urls, new_titles_map)
