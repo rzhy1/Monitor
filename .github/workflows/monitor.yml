@@ -99,7 +99,7 @@ jobs:
                       "terminal": "",
                       "condition": [
                           {
-                              "fieldName": "categorynum", # 使用截图里看到的字段名
+                              "fieldName": "categorynum", # 使用正确的字段名
                               "equal": catenum,
                               "notEqual": None,
                               "equalList": None,
@@ -109,7 +109,7 @@ jobs:
                           }
                       ],
                       "time": None,
-                      "highlights": "",   # 关闭高亮，防止标题混入 HTML
+                      "highlights": "",   # 关闭高亮，防止标题混入 <em> 标签
                       "statistics": None,
                       "unionCondition": None,
                       "accuracy": "",
@@ -118,15 +118,23 @@ jobs:
                       "isBusiness": "1"
                   }
 
-                  headers = {
-                      "User-Agent": USER_AGENT,
-                      "Content-Type": "application/json;charset=UTF-8",
-                      "Origin": self.base_url,
-                      "Referer": url,
-                      "X-Requested-With": "XMLHttpRequest"
-                  }
-
                   try:
+                      # 1. 【关键防反爬】先 GET 访问一下页面，让服务器下发 Cookie，绕过防火墙拦截
+                      self.session.get(url, headers={"User-Agent": USER_AGENT}, timeout=10)
+                      
+                      # 2. 补全所有浏览器可能带的请求头
+                      headers = {
+                          "User-Agent": USER_AGENT,
+                          "Accept": "application/json, text/javascript, */*; q=0.01",
+                          "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+                          "Content-Type": "application/json;charset=UTF-8",
+                          "Origin": self.base_url,
+                          "Referer": url,
+                          "X-Requested-With": "XMLHttpRequest",
+                          "Connection": "keep-alive"
+                      }
+
+                      # 3. 发送 POST 请求
                       resp = self.session.post(API_URL, json=payload, headers=headers, timeout=15)
                       resp.raise_for_status()
                       data = resp.json()
@@ -136,7 +144,7 @@ jobs:
                       
                       # 打印调试信息
                       if not records:
-                          print(f"[DEBUG] 接口返回了 0 条数据。请检查参数。")
+                          print(f"[DEBUG] 接口返回了 0 条数据。")
                       else:
                           print(f"[DEBUG] 接口共返回 {len(records)} 条数据。前 3 条标题示例：")
                           for r in records[:3]:
