@@ -66,85 +66,45 @@ jobs:
                   self.base_url = "https://ggzy.zj.gov.cn"
 
               def get_content_hash(self, url, page):
-                  catenum_match = re.search(r'catenum=(\d+)', url)
-                  if not catenum_match:
-                      return None, None
-                  catenum = catenum_match.group(1)
-
                   try:
-                      # 1. 设置路由拦截，修改页面自身发出的请求参数，确保拿到正确的分类数据
-                      def handle_route(route):
-                          if "getFullTextDataNew" in route.request.url:
-                              try:
-                                  post_data = json.loads(route.request.post_data)
-                                  post_data["rn"] = 100 # 确保每页返回100条
-                                  if "condition" in post_data:
-                                      # 强制修改为当前需要的分类
-                                      post_data["condition"][0]["equal"] = catenum
-                                  route.continue_(post_data=json.dumps(post_data))
-                              except Exception:
-                                  route.continue_()
-                          else:
-                              route.continue_()
-
-                      page.route("**/*getFullTextDataNew*", handle_route)
-
-                      # 2. 使用 expect_response 监听页面自身发出的、返回200的接口请求
-                      with page.expect_response(
-                          lambda r: "getFullTextDataNew" in r.url and r.status == 200,
-                          timeout=30000
-                      ) as response_info:
-                          # 正常访问页面，浏览器会自动处理所有安全校验
-                          page.goto(url, wait_until="domcontentloaded", timeout=60000)
-
-                      # 3. 获取捕获到的合法 JSON 数据
-                      response = response_info.value
-                      data = response.json()
+                      # 1. 访问页面，等待 DOM 加载完，再额外等 3 秒给 JS 执行渲染的时间
+                      page.goto(url, wait_until="domcontentloaded", timeout=40000)
+                      page.wait_for_timeout(3000)
                       
-                      # 取消路由拦截，避免影响后续
-                      page.unroute("**/*getFullTextDataNew*")
-
-                      records = data.get("result", {}).get("records", [])
+                      # 2. 直接获取当前网页的 HTML 源码
+                      html = page.content()
+                      soup = BeautifulSoup(html, 'html.parser')
+                      
+                      # 3. 从 HTML 中寻找列表
                       titles_with_links = []
-
-                      if not records:
-                          print(f"[DEBUG] 接口返回了 0 条数据。")
+                      items = soup.select('a.infotitle')
+                      
+                      if not items:
+                          print(f"[DEBUG] 页面成功加载，但未找到 a.infotitle 标签。可能被 WAF 拦截，页面标题: {soup.title.string if soup.title else '无'}")
+                          # 打印前 200 个字符看看是不是验证码页面
+                          print(f"[DEBUG] 页面开头: {html[:200].replace(chr(10), ' ')}")
                       else:
-                          print(f"[DEBUG] 接口共返回 {len(records)} 条数据。前 3 条标题示例：")
-                          for r in records[:3]:
-                              print(f"  - {r.get('titlenew')}")
-
-                      for item in records:
-                          raw_title = item.get("titlenew", "")
-                          title_text = BeautifulSoup(raw_title, "html.parser").get_text(strip=True)
-                          
-                          if not title_text or KEYWORD not in title_text:
-                              continue
-                              
-                          detail_url = item.get("linkurl", "")
-                          if detail_url:
-                              if detail_url.startswith("/"):
-                                  detail_url = f"{self.base_url}{detail_url}"
-                              elif not detail_url.startswith("http"):
-                                  detail_url = f"{self.base_url}/{detail_url}"
-                          else:
-                              detail_url = url
-                              
-                          titles_with_links.append((title_text, detail_url))
+                          print(f"[DEBUG] 页面共找到 {len(items)} 个 a.infotitle 标签。")
+                          for a in items:
+                              title_text = a.get_text(strip=True)
+                              if KEYWORD in title_text:
+                                  href = a.get('href', '')
+                                  if href.startswith('/'):
+                                      detail_url = f"{self.base_url}{href}"
+                                  elif href.startswith('http'):
+                                      detail_url = href
+                                  else:
+                                      detail_url = url
+                                  titles_with_links.append((title_text, detail_url))
 
                       sorted_titles = sorted([title for title, link in titles_with_links])
                       content_for_hash = "\n".join(sorted_titles)
                       return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
 
                   except Exception as e:
-                      print(f"[ERROR] 监听页面请求失败 for {url}: {str(e)}")
-                      try:
-                          page.unroute("**/*getFullTextDataNew*")
-                      except Exception:
-                          pass
+                      print(f"[ERROR] 渲染页面失败 for {url}: {str(e)}")
                       return None, None
 
-              # --- 以下为状态管理和通知等辅助方法，保持不变 ---
               def load_state(self):
                   try:
                       with open(STATE_FILE, 'r') as f:
@@ -240,7 +200,6 @@ jobs:
                       )
                       page = context.new_page()
                       
-                      # 注入基础反检测脚本
                       page.add_init_script("""
                           Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
                           Object.defineProperty(navigator, 'languages', { get: () => ['zh-CN', 'zh', 'en'] });
