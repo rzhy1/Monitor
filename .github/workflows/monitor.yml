@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install playwright requests beautifulsoup4 urllib3
+          pip install playwright playwright-stealth requests beautifulsoup4 urllib3
 
       - name: Install Playwright browsers
         run: playwright install chromium --with-deps
@@ -54,12 +54,11 @@ jobs:
           import os, json, hashlib, time, re, requests
           from bs4 import BeautifulSoup
           from playwright.sync_api import sync_playwright
+          from playwright_stealth import stealth_sync
 
-          # 使用你抓包的完全一致的 UA 和特征
-          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36 Edg/158.0.0.0"
+          USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
           STATE_FILE = "url_state.json"
           KEYWORD = "杭州市城市轨道交通"
-          API_URL = "https://ggzy.zj.gov.cn/inteligentsearch/rest/esinteligentsearch/getFullTextDataNew"
 
           class Monitor:
               def __init__(self):
@@ -68,117 +67,44 @@ jobs:
                   self.base_url = "https://ggzy.zj.gov.cn"
 
               def get_content_hash(self, url, page):
-                  catenum_match = re.search(r'catenum=(\d+)', url)
-                  if not catenum_match:
-                      return None, None
-                  catenum = catenum_match.group(1)
-
                   try:
-                      # 1. 用浏览器访问一下页面，获取真实的 WAF Cookie
-                      page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                      cookies = page.context.cookies()
-                      cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
-
-                      # 2. 构造基于你抓包的 payload（加上了 infoc:33 浙江省过滤）
-                      payload = {
-                          "token": "",
-                          "pn": 0,
-                          "rn": 100,
-                          "sdt": "",
-                          "edt": "",
-                          "wd": "",
-                          "inc_wd": "",
-                          "exc_wd": "",
-                          "fields": "title",
-                          "cnum": "001",
-                          "sort": "{\"webdate\":\"0\"}",
-                          "ssort": "title",
-                          "cl": 200,
-                          "terminal": "",
-                          "condition": [
-                              {
-                                  "fieldName": "categorynum",
-                                  "isLike": True,
-                                  "likeType": 2,
-                                  "equal": catenum
-                              },
-                              {
-                                  "fieldName": "infoc",
-                                  "isLike": True,
-                                  "likeType": 2,
-                                  "equal": "33"
-                              }
-                          ],
-                          "time": None,
-                          "highlights": "",
-                          "statistics": None,
-                          "unionCondition": None,
-                          "accuracy": "",
-                          "noParticiple": "0",
-                          "searchRange": None,
-                          "isBusiness": "1"
-                      }
-
-                      # 3. 完美复刻你的请求头
-                      headers = {
-                          "User-Agent": USER_AGENT,
-                          "Accept": "application/json, text/javascript, */*; q=0.01",
-                          "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-                          "Content-Type": "application/json;charset=UTF-8",
-                          "Origin": self.base_url,
-                          "Referer": url,
-                          "X-Requested-With": "XMLHttpRequest",
-                          "Sec-Fetch-Dest": "empty",
-                          "Sec-Fetch-Mode": "cors",
-                          "Sec-Fetch-Site": "same-origin",
-                          "sec-ch-ua": '"Chromium";v="158", "Not.A/Brand";v="24", "Microsoft Edge";v="158"',
-                          "sec-ch-ua-mobile": "?0",
-                          "sec-ch-ua-platform": '"Windows"',
-                          "Cookie": cookie_str
-                      }
-
-                      # 4. 发起 POST 请求
-                      resp = requests.post(API_URL, json=payload, headers=headers, timeout=15)
+                      # 1. 访问页面（由于已经打了 stealth 补丁，WAF 会以为是真人）
+                      page.goto(url, wait_until="domcontentloaded", timeout=60000)
                       
-                      if resp.status_code != 200:
-                          print(f"[ERROR] 状态码: {resp.status_code}, 响应: {resp.text[:100]}")
-                          return None, None
-                          
-                      data = resp.json()
-                      records = data.get("result", {}).get("records", [])
-                      titles_with_links = []
+                      # 2. 等待列表数据渲染出来（寻找真实页面上的标题 a 标签）
+                      page.wait_for_selector('a.infotitle', timeout=20000)
+                      
+                      # 3. 直接从渲染好的 DOM 树里提取标题和链接
+                      titles_with_links = page.evaluate("""() => {
+                          const items = Array.from(document.querySelectorAll('a.infotitle'));
+                          return items.map(item => {
+                              return {
+                                  title: item.innerText.trim(),
+                                  link: item.href
+                              }
+                          });
+                      }""")
 
-                      if not records:
-                          print(f"[DEBUG] 接口返回了 0 条数据。")
+                      # 4. 过滤出包含“杭州市城市轨道交通”的标题
+                      filtered_titles = []
+                      if not titles_with_links:
+                          print(f"[DEBUG] 页面渲染成功，但没有找到任何列表项。")
                       else:
-                          print(f"[DEBUG] 接口共返回 {len(records)} 条数据。前 3 条标题示例：")
-                          for r in records[:3]:
-                              print(f"  - {r.get('titlenew')}")
+                          print(f"[DEBUG] 页面共渲染出 {len(titles_with_links)} 条数据。前 3 条示例：")
+                          for t in titles_with_links[:3]:
+                              print(f"  - {t['title']}")
 
-                      for item in records:
-                          raw_title = item.get("titlenew", "")
-                          title_text = BeautifulSoup(raw_title, "html.parser").get_text(strip=True)
-                          
-                          if not title_text or KEYWORD not in title_text:
-                              continue
-                              
-                          detail_url = item.get("linkurl", "")
-                          if detail_url:
-                              if detail_url.startswith("/"):
-                                  detail_url = f"{self.base_url}{detail_url}"
-                              elif not detail_url.startswith("http"):
-                                  detail_url = f"{self.base_url}/{detail_url}"
-                          else:
-                              detail_url = url
-                              
-                          titles_with_links.append((title_text, detail_url))
+                      for item in titles_with_links:
+                          if KEYWORD in item["title"]:
+                              filtered_titles.append((item["title"], item["link"]))
 
-                      sorted_titles = sorted([title for title, link in titles_with_links])
+                      # 5. 计算哈希
+                      sorted_titles = sorted([title for title, link in filtered_titles])
                       content_for_hash = "\n".join(sorted_titles)
-                      return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
+                      return hashlib.sha256(content_for_hash.encode()).hexdigest(), filtered_titles
 
                   except Exception as e:
-                      print(f"[ERROR] 请求异常 for {url}: {str(e)}")
+                      print(f"[ERROR] 渲染页面失败 for {url}: {str(e)}")
                       return None, None
 
               def load_state(self):
@@ -267,7 +193,6 @@ jobs:
                   new_titles_map = {}
 
                   with sync_playwright() as p:
-                      # 启动无头浏览器，仅用于获取 Cookie 和绕过 WAF 环境检测
                       browser = p.chromium.launch(headless=True)
                       context = browser.new_context(
                           user_agent=USER_AGENT,
@@ -276,6 +201,9 @@ jobs:
                           timezone_id='Asia/Shanghai'
                       )
                       page = context.new_page()
+                      
+                      # 注入 playwright-stealth，彻底抹除自动化特征
+                      stealth_sync(page)
 
                       for url in self.check_urls:
                           print(f"\n检查 URL: {url}")
@@ -296,7 +224,7 @@ jobs:
                               else:
                                   print(f"URL {url} 未检测到变化")
                           print(f"[DEBUG] 耗时: {time.time() - start_time:.2f} 秒")
-                          time.sleep(1)
+                          time.sleep(2)
 
                       browser.close()
 
