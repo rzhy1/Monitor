@@ -72,14 +72,15 @@ jobs:
                   catenum = catenum_match.group(1)
 
                   try:
-                      # 1. 拦截页面发出的请求，强行注入分类参数和页数
+                      # 1. 设置路由拦截，修改页面自身发出的请求参数，确保拿到正确的分类数据
                       def handle_route(route):
                           if "getFullTextDataNew" in route.request.url:
                               try:
                                   post_data = json.loads(route.request.post_data)
-                                  post_data["rn"] = 100 # 确保拉取100条
+                                  post_data["rn"] = 100 # 确保每页返回100条
                                   if "condition" in post_data:
-                                      post_data["condition"][0]["equal"] = catenum # 锁定当前分类
+                                      # 强制修改为当前需要的分类
+                                      post_data["condition"][0]["equal"] = catenum
                                   route.continue_(post_data=json.dumps(post_data))
                               except Exception:
                                   route.continue_()
@@ -88,50 +89,62 @@ jobs:
 
                       page.route("**/*getFullTextDataNew*", handle_route)
 
-                      # 2. 正常加载页面（由于拦截了请求，WAF 以为是正常用户，会放行页面加载）
-                      page.goto(url, wait_until="domcontentloaded", timeout=60000)
-                      
-                      # 3. 等待页面把列表渲染出来
-                      page.wait_for_selector('a.infotitle', timeout=20000)
-                      
-                      # 4. 直接从渲染好的 DOM 提取数据
-                      titles_with_links = page.evaluate("""() => {
-                          const items = Array.from(document.querySelectorAll('a.infotitle'));
-                          return items.map(item => {
-                              return {
-                                  title: item.innerText.trim(),
-                                  link: item.href
-                              }
-                          });
-                      }""")
+                      # 2. 使用 expect_response 监听页面自身发出的、返回200的接口请求
+                      with page.expect_response(
+                          lambda r: "getFullTextDataNew" in r.url and r.status == 200,
+                          timeout=30000
+                      ) as response_info:
+                          # 正常访问页面，浏览器会自动处理所有安全校验
+                          page.goto(url, wait_until="domcontentloaded", timeout=60000)
+
+                      # 3. 获取捕获到的合法 JSON 数据
+                      response = response_info.value
+                      data = response.json()
                       
                       # 取消路由拦截，避免影响后续
                       page.unroute("**/*getFullTextDataNew*")
 
-                      filtered_titles = []
-                      if not titles_with_links:
-                          print(f"[DEBUG] 页面渲染成功，但没有找到任何列表项。")
+                      records = data.get("result", {}).get("records", [])
+                      titles_with_links = []
+
+                      if not records:
+                          print(f"[DEBUG] 接口返回了 0 条数据。")
                       else:
-                          print(f"[DEBUG] 页面共渲染出 {len(titles_with_links)} 条数据。前 3 条示例：")
-                          for t in titles_with_links[:3]:
-                              print(f"  - {t['title']}")
+                          print(f"[DEBUG] 接口共返回 {len(records)} 条数据。前 3 条标题示例：")
+                          for r in records[:3]:
+                              print(f"  - {r.get('titlenew')}")
 
-                      for item in titles_with_links:
-                          if KEYWORD in item["title"]:
-                              filtered_titles.append((item["title"], item["link"]))
+                      for item in records:
+                          raw_title = item.get("titlenew", "")
+                          title_text = BeautifulSoup(raw_title, "html.parser").get_text(strip=True)
+                          
+                          if not title_text or KEYWORD not in title_text:
+                              continue
+                              
+                          detail_url = item.get("linkurl", "")
+                          if detail_url:
+                              if detail_url.startswith("/"):
+                                  detail_url = f"{self.base_url}{detail_url}"
+                              elif not detail_url.startswith("http"):
+                                  detail_url = f"{self.base_url}/{detail_url}"
+                          else:
+                              detail_url = url
+                              
+                          titles_with_links.append((title_text, detail_url))
 
-                      sorted_titles = sorted([title for title, link in filtered_titles])
+                      sorted_titles = sorted([title for title, link in titles_with_links])
                       content_for_hash = "\n".join(sorted_titles)
-                      return hashlib.sha256(content_for_hash.encode()).hexdigest(), filtered_titles
+                      return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
 
                   except Exception as e:
-                      print(f"[ERROR] 渲染页面失败 for {url}: {str(e)}")
+                      print(f"[ERROR] 监听页面请求失败 for {url}: {str(e)}")
                       try:
                           page.unroute("**/*getFullTextDataNew*")
                       except Exception:
                           pass
                       return None, None
 
+              # --- 以下为状态管理和通知等辅助方法，保持不变 ---
               def load_state(self):
                   try:
                       with open(STATE_FILE, 'r') as f:
@@ -227,7 +240,7 @@ jobs:
                       )
                       page = context.new_page()
                       
-                      # 直接用原生 JS 注入，抹除所有的自动化特征
+                      # 注入基础反检测脚本
                       page.add_init_script("""
                           Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
                           Object.defineProperty(navigator, 'languages', { get: () => ['zh-CN', 'zh', 'en'] });
