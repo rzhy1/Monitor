@@ -72,61 +72,36 @@ jobs:
                   catenum = catenum_match.group(1)
 
                   try:
-                      # 1. 访问页面，让浏览器建立真实的上下文（获取 Cookie 等）
-                      page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                      # 设置路由拦截，在页面发出的请求中强行修改参数
+                      def handle_route(route):
+                          if "getFullTextDataNew" in route.request.url:
+                              try:
+                                  post_data = json.loads(route.request.post_data)
+                                  post_data["wd"] = KEYWORD  # 注入关键词
+                                  post_data["rn"] = 100       # 确保每页100条
+                                  if "condition" in post_data:
+                                      post_data["condition"][0]["equal"] = catenum
+                                  route.continue_(post_data=json.dumps(post_data))
+                              except Exception:
+                                  route.continue_()
+                          else:
+                              route.continue_()
+
+                      page.route("**/*getFullTextDataNew*", handle_route)
+
+                      # 使用 expect_response 监听页面自身发出的、返回200的接口请求
+                      with page.expect_response(
+                          lambda r: "getFullTextDataNew" in r.url and r.status == 200,
+                          timeout=30000
+                      ) as response_info:
+                          page.goto(url, wait_until="domcontentloaded", timeout=60000)
+
+                      response = response_info.value
+                      data = response.json()
                       
-                      # 2. 构造请求体
-                      payload = {
-                          "token": "",
-                          "pn": 0,
-                          "rn": 100,
-                          "wd": KEYWORD,       # 搜索关键词
-                          "inc_wd": "",
-                          "exc_wd": "",
-                          "fields": "title;content",
-                          "cnum": "001",
-                          "sort": "{\"webdate\":\"0\"}",
-                          "ssort": "title",
-                          "cl": 200,
-                          "terminal": "",
-                          "condition": [
-                              {
-                                  "fieldName": "categorynum",
-                                  "equal": catenum,
-                                  "notEqual": None,
-                                  "equalList": None,
-                                  "notEqualList": None,
-                                  "isLike": False,
-                                  "likeType": 2
-                              }
-                          ],
-                          "time": None,
-                          "highlights": "",
-                          "statistics": None,
-                          "unionCondition": None,
-                          "accuracy": "",
-                          "noParticiple": "1",
-                          "searchRange": None,
-                          "isBusiness": "1"
-                      }
-                      
-                      # 3. 直接在浏览器内部执行 fetch 请求，完美绕过 WAF 和跨域限制
-                      js_script = f"""
-                      async () => {{
-                          const response = await fetch("https://ggzy.zj.gov.cn/inteligentsearch/rest/esinteligentsearch/getFullTextDataNew", {{
-                              method: "POST",
-                              headers: {{
-                                  "Content-Type": "application/json;charset=UTF-8",
-                                  "X-Requested-With": "XMLHttpRequest"
-                              }},
-                              body: JSON.stringify({json.dumps(payload)})
-                          }});
-                          return await response.json();
-                      }}
-                      """
-                      
-                      data = page.evaluate(js_script)
-                      
+                      # 取消路由拦截，避免影响后续检查
+                      page.unroute("**/*getFullTextDataNew*")
+
                       records = data.get("result", {}).get("records", [])
                       titles_with_links = []
                       
@@ -160,9 +135,14 @@ jobs:
                       return hashlib.sha256(content_for_hash.encode()).hexdigest(), titles_with_links
 
                   except Exception as e:
-                      print(f"[ERROR] 执行浏览器请求失败 for {url}: {str(e)}")
+                      print(f"[ERROR] 渲染或拦截接口失败 for {url}: {str(e)}")
+                      try:
+                          page.unroute("**/*getFullTextDataNew*")
+                      except Exception:
+                          pass
                       return None, None
 
+              # --- 以下为状态管理和通知等辅助方法，保持不变 ---
               def load_state(self):
                   try:
                       with open(STATE_FILE, 'r') as f:
