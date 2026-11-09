@@ -9,7 +9,7 @@ on:
       - 'url_state.json'
   schedule:
     # UTC 23:00、00:00-13:00，对应北京时间 07:00-21:00，每小时检查一次
-    - cron: '0 23,0-13 * * *'
+    # - cron: '0 23,0-13 * * *'
 
 permissions:
   contents: write
